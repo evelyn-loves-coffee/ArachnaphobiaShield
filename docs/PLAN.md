@@ -33,7 +33,16 @@ Hard constraints:
 Facts (verified from the local installation):
 
 - Client install: `World of Warcraft/_classic_beta_/Interface/` (Steam/Proton prefix).
-- Addons are classic-style: one folder in `Interface/AddOns/`, one `.toc` whose
+- **Finding (2026-10-13, in-client error stack):** the chat handler lives at
+  `Interface/AddOns/Blizzard_ChatFrameBase/Shared/...` — a **modern codebase**
+  (post-3.0 addon layout), not a 1.12-era UI. So: classic 1.x *content*, modern
+  *API generation* (likely). The classic-API assumptions in this section are
+  hypotheses pending the SBG2 probes (§12.5).
+- The `Spoken_Books.toc` installed on this machine lists
+  `## Interface: 11509, 20506, 16001` — **16001 decodes to 1.60.1**
+  (1·10000 + 60·100 + 1). Very likely this client's TOC interface number;
+  `GetBuildInfo()` output is authoritative.
+- Addons are `.toc`-style: one folder in `Interface/AddOns/`, one `.toc` whose
   filename equals the folder name and `## Title`, files listed in the `.toc`.
 - Addon scripting is **Lua 5.0** (assumed): no `//`, no `table.pack`, no `goto`,
   no bitwise ops, no `math.huge`. `^` works, `unpack` exists, `#` works.
@@ -57,9 +66,13 @@ APIs this plan relies on (classic-era):
 | `CreateFrame`, `SetPoint`, `SetSize`, `SetTexture`, `SetFrameStrata`, `SetClampRect`, `CheckBox`, `Slider`, `EditBox`, `SetBackdrop`, `PlaySoundFile`, `StaticPopup`? (no) | UI | classic ✓ |
 | `SavedVariables` in `.toc` | persistence | classic ✓ |
 
-Known **absences** (do not use): `C_*` namespaces, `C_Timer`, `SlashCmdList`,
+**API-generation status: UNCONFIRMED** (see finding above). If SBG2 confirms a
+modern generation, the table above is re-audited and the "do not use" list
+below is dropped (modern: `SlashCmdList`, `C_Timer`, `ADDON_LOADED` are then
+preferred). Known **absences on classic clients** (do not use until proven
+present by SBG2): `C_*` namespaces, `C_Timer`, `SlashCmdList`,
 `ADDON_LOADED`/`ADDON_DISABLED` events, `UNIT_FACTION`, `partyNtarget` unit
-tokens, any unit-enumeration API.
+tokens, any unit-enumeration API (holds on every WoW generation — keep).
 
 > **M1 gate:** the exact `## Interface:` number for the 1.60.1 client is unknown
 > until we run the in-client verification scripts (§12) in-game. Until then the
@@ -478,6 +491,34 @@ readability.
 | marker nil + `_VERSION` set | newer Lua (5.1+); 5.0-compatible code still valid |
 | `buildInfo` major/minor/patch | the exact `## Interface:` number (classic mapping major·10000 + minor·100 + patch) |
 | `WorldFramePoint3D = true` | core feasibility (risk #2 cleared) |
-| `GetNumAuras_returns = 2` | classic-era aura API shape (not 3.0+) |
+| `GetNumAuras_returns = 2` | classic-era aura API shape (`1` = modern shape) |
 | `projPlayerScreen` x/y numbers, `behind=false` | world→screen projection works in this client |
 | spider probe `family=` value | the exact family string(s) for `settings.families` (risk #7) |
+
+### 12.5 Hardened probes (SBG2, nil-safe) — supersedes 12.1–12.3
+
+First in-client run (2026-10-13): the spider probe died with
+`attempt to call a nil value` — one of `UnitName`/`GetUnitFamily`/
+`UnitCreatureType`/`UnitLevel` is **absent** on this client — and the error
+stack revealed the modern codebase (see §2 finding). The SBG2 set below is
+nil-safe (missing → `MISSING` / `API_MISSING`) and adds modern-generation
+checks (`C_Timer`, `C_Map.PositionToScreen`, `SlashCmdList`, `Bindings`). Use
+these, not 12.1–12.3.
+
+**One-shot report** (one line, in character):
+
+```
+/run local function p(k,v) print(("SBG2| %s: %s"):format(k, tostring(v))) end; local function f(k,nm) p(k, type(nm)=="function" and true or "MISSING") end; p("lua50_marker", select(2, _G)); p("_VERSION", _VERSION); p("unpack", unpack ~= nil); p("table.unpack", rawget(table, "unpack") ~= nil); p("table.pack", rawget(table, "pack") ~= nil); p("math.huge", math.huge ~= nil); f("WorldFramePoint3D", WorldFramePoint3D); f("GetUnitPosition", GetUnitPosition); f("GetUnitFamily", GetUnitFamily); f("UnitCreatureType", UnitCreatureType); f("UnitName", UnitName); f("GetUnitName", GetUnitName); f("UnitLevel", UnitLevel); f("UnitIsVisible", UnitIsVisible); f("UnitIsDead", UnitIsDead); f("UnitCanAttack", UnitCanAttack); f("IsPlayerUnit", IsPlayerUnit); f("GetNumAuras", GetNumAuras); f("GetUnitAura", GetUnitAura); f("GetScreenSize", GetScreenSize); p("C_Timer", C_Timer ~= nil); p("C_Map", C_Map ~= nil); p("C_Map.PositionToScreen", C_Map and type(rawget(C_Map, "PositionToScreen")) == "function" or false); p("SlashCmdList", SlashCmdList ~= nil); p("Bindings_table", type(Bindings) == "table"); local a,b,c,d = GetBuildInfo(); p("buildInfo", string.format("major=%s minor=%s patch=%s build=%s", tostring(a), tostring(b), tostring(c), tostring(d))); local px,py,pz; if type(GetUnitPosition)=="function" then px,py,pz = GetUnitPosition("player") end; if px then p("playerPos", string.format("%.1f %.1f %.1f", px,py,pz)); if type(WorldFramePoint3D)=="function" then local sx,sy,beh = WorldFramePoint3D(px,py,pz); p("proj_player", string.format("x=%s y=%s behind=%s", tostring(sx), tostring(sy), tostring(beh))) end; if C_Map and type(C_Map.PositionToScreen)=="function" then local cx,cy,cb = C_Map.PositionToScreen(px,py,pz); p("C_Map.proj_player", string.format("x=%s y=%s visible=%s", tostring(cx), tostring(cy), tostring(cb))) end end; if type(GetScreenSize)=="function" then local w,h,s = GetScreenSize(); p("screen", string.format("%sx%s scale=%s", w, h, tostring(s))) end; p("locale", GetLocale()); p("zone", GetZoneText())
+```
+
+**Spider probe** (target a spider first, ideally small + large):
+
+```
+/run local function p(k,v) print(("SBG2| %s: %s"):format(k, tostring(v))) end; local u = "target"; local name = nil; if type(UnitName)=="function" then name = UnitName(u) end; if not name and type(GetUnitName)=="function" then name = GetUnitName(u) end; p("name", name or "?"); p("level", type(UnitLevel)=="function" and UnitLevel(u) or "API_MISSING"); if type(GetUnitFamily)=="function" then p("family", GetUnitFamily(u) or "nil") else p("family", "API_MISSING") end; if type(UnitCreatureType)=="function" then p("creatureType", UnitCreatureType(u) or "nil") else p("creatureType", "API_MISSING") end; local x,y,z; if type(GetUnitPosition)=="function" then x,y,z = GetUnitPosition(u) end; if x then p("pos", string.format("%.1f %.1f %.1f", x,y,z)) else p("pos", "nil (restricted or unknown)") end
+```
+
+**Interpretation deltas vs §12.4:** any `MISSING` on `WorldFramePoint3D` is no
+longer fatal if `C_Map.PositionToScreen = true` (modern projection path);
+`GetNumAuras_returns = 1` + `_VERSION = Lua 5.1` confirms modern generation;
+`family = API_MISSING` forces detection onto `creatureType`/`extraNames`
+(both already in the design, §3.1).
