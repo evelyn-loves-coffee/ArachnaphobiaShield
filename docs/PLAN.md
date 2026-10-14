@@ -37,57 +37,67 @@ Hard constraints:
 Facts (verified from the local installation):
 
 - Client install: `World of Warcraft/_classic_beta_/Interface/` (Steam/Proton prefix).
-- **Finding (2026-10-13, in-client error stack):** the chat handler lives at
-  `Interface/AddOns/Blizzard_ChatFrameBase/Shared/...` — a **modern codebase**
-  (post-3.0 addon layout), not a 1.12-era UI. So: classic 1.x *content*, modern
-  *API generation* (likely). The classic-API assumptions in this section are
-  hypotheses pending the SBG2 probes (§12.5).
+- **Confirmed (2026-10-13, in-client error stack + SBG2 run):** modern codebase
+  (`Interface/AddOns/Blizzard_ChatFrameBase/...` in the stack) with classic 1.x
+  *content* on a **reduced, custom API set** (classic-era functions stripped,
+  modern `C_*` infrastructure present). Details in the confirmed lists below.
 - The `Spoken_Books.toc` installed on this machine lists
-  `## Interface: 11509, 20506, 16001` — **16001 decodes to 1.60.1**
-  (1·10000 + 60·100 + 1). Very likely this client's TOC interface number;
-  `GetBuildInfo()` output is authoritative.
+  `## Interface: 11509, 20506, 16001`. **CONFIRMED (2026-10-13):**
+  `GetBuildInfo()` returns `1.60.1 / 70374 / Oct 12 2026 / 16001` (four
+  **strings** — modern signature); the 4th value is the interface number:
+  **`## Interface: 16001`**. The `.toc` is unblocked.
 - Addons are `.toc`-style: one folder in `Interface/AddOns/`, one `.toc` whose
   filename equals the folder name and `## Title`, files listed in the `.toc`.
-- Addon scripting is **Lua 5.0** (assumed): no `//`, no `table.pack`, no `goto`,
-  no bitwise ops, no `math.huge`. `^` works, `unpack` exists, `#` works.
-  **The owner notes the client may ship a newer Lua — unverified.** Policy: write
-  5.0-compatible code (it runs unchanged on 5.1+). Never use `//`, `table.pack`,
-  `goto`; if unpacking is needed use `local UNPACK = table.unpack or unpack`.
-  Actual version confirmed via the §12 in-client script (M1).
+- Addon scripting is **Lua 5.1 (confirmed 2026-10-13):** `_VERSION = "Lua
+  5.1"`, `math.huge` present, `table.unpack`/`table.pack` **absent** (5.2+),
+  global `unpack` present. Forbidden: `//`, `goto`, `table.pack`, bitwise ops.
+  Everything else is standard 5.1.
 
-APIs this plan relies on (classic-era):
+**Confirmed present (2026-10-13):** `UnitName`, `GetUnitName`, `UnitLevel`,
+`UnitIsVisible`, `UnitIsDead`, `UnitCanAttack`, `UnitCreatureType`, `C_Timer`,
+`C_Map` (partial), `SlashCmdList`.
+
+**Confirmed absent (2026-10-13):** `WorldFramePoint3D`, `GetUnitPosition`,
+`GetUnitFamily`, `IsPlayerUnit`, `GetNumAuras`, `GetUnitAura`, `GetScreenSize`,
+`C_Map.PositionToScreen`.
+
+**Confirmed spider data (Tirisfal Glades):** "Young Night Web Spider", level 2,
+`UnitCreatureType` = **"Beast"** (not spider-specific) → detection must be
+**name-based** (name patterns + user `extraNames`), not family-based.
+
+**Design consequence:** no world→screen projection **and** no unit-position API
+exist on this client → the original 3D-follow cover is **infeasible** here.
+Pivoted to UI-anchored covers (§3.0).
+
+APIs the plan relies on (**confirmed** 2026-10-13 unless noted):
 
 | API | Use | Status |
 |---|---|---|
-| `GetUnitPosition(unit)` → x, y, z (z = up) or nil | world anchor | classic ✓ (self-test in M1) |
-| `WorldFramePoint3D(x, y, z)` → sx, sy, isBehind | world→screen projection | classic ✓ (self-test in M1) |
-| `GetUnitFamily(unit)` → e.g. "Spider" | primary spider detection | 1.12-era (self-test in M1) |
-| `UnitCreatureType(unit)` | secondary detection | 1.1x-era (self-test in M1) |
-| `UnitIsVisible`, `UnitIsDead`, `UnitCanAttack`, `UnitLevel`, `UnitName`, `IsPlayerUnit` | tracking/detection guards | classic ✓ |
-| `GetBuildInfo()` → major, minor, patch, build | interface-number check | classic ✓ |
-| Events: `PLAYER_ENTERING_WORLD`, `UNIT_TARGET`, `UNIT_PET`, `UNIT_HEALTH`, `PARTY_UPDATE`, `RAID_UPDATE`, `UPDATE_AURAS` | refresh triggers | classic ✓ |
-| `SLASH_` vars + `CHAT_COMMAND` event | slash commands | classic ✓ (note: `SlashCmdList` is 3.0+ — do **not** use) |
-| `CreateFrame`, `SetPoint`, `SetSize`, `SetTexture`, `SetFrameStrata`, `SetClampRect`, `CheckBox`, `Slider`, `EditBox`, `SetBackdrop`, `PlaySoundFile`, `StaticPopup`? (no) | UI | classic ✓ |
-| `SavedVariables` in `.toc` | persistence | classic ✓ |
+| `UnitName` / `GetUnitName` (both present) | identity, name-based detection | ✓ |
+| `UnitLevel` | label, size heuristic | ✓ |
+| `UnitIsVisible`, `UnitIsDead`, `UnitCanAttack` | tracking/detection guards | ✓ |
+| `UnitCreatureType` | sanity only (spiders report **"Beast"**) | ✓ |
+| `C_Timer` | timers | ✓ |
+| `SlashCmdList` + `CHAT_COMMAND` | slash commands | ✓ |
+| `GetBuildInfo()` → 4 **strings** (4th = interface no.) | interface check | ✓ |
+| `GetCursorPosition` | hover-shield anchor | probe §12.6 |
+| `GetEffectiveScreenInfo` | screen size (replaces absent `GetScreenSize`) | probe §12.6 |
+| `UnitClass` / `UnitFactionGroup` | "is a player?" (replaces absent `IsPlayerUnit`) | probe §12.6 |
+| `CreateFrame`, `SetPoint`, `SetSize`, `SetTexture`, `SetFrameStrata`, `SetClampRect`, `CheckBox`, `Slider`, `EditBox`, `SetBackdrop`, `PlaySoundFile` | UI | assumed ✓, spot-check §12.6 |
+| `SavedVariables` in `.toc` | persistence | ✓ |
 
-**API-generation status: UNCONFIRMED** (see finding above). If SBG2 confirms a
-modern generation, the table above is re-audited and the "do not use" list
-below is dropped (modern: `SlashCmdList`, `C_Timer`, `ADDON_LOADED` are then
-preferred). Known **absences on classic clients** (do not use until proven
-present by SBG2): `C_*` namespaces, `C_Timer`, `SlashCmdList`,
-`ADDON_LOADED`/`ADDON_DISABLED` events, `UNIT_FACTION`, `partyNtarget` unit
-tokens, any unit-enumeration API (holds on every WoW generation — keep).
+**API-generation status: CONFIRMED — modern client, reduced API set**
+(2026-10-13). `C_Timer`, `C_Map` (partial), `SlashCmdList` are present and
+**preferred**; classic `SLASH_` variables are not needed. Unit-enumeration APIs
+do not exist in any WoW generation — tracking stays token-based (§3.1).
 
-> **M1 gate:** the exact `## Interface:` number for the 1.60.1 client is unknown
-> until we run the in-client verification scripts (§12) in-game. Until then the
-> `.toc` is blocked. A mismatched interface number means the client lists the
-> addon as out-of-date and it will not load. Classic mapping (1.15.09 → 11509)
-> suggests 1.60.1 ≈ **10601**, but the `GetBuildInfo()` output is authoritative.
+> **M1 gate: CLEARED (2026-10-13).** `## Interface: 16001` confirmed via
+> `GetBuildInfo()`'s 4th return value. `.toc` unblocked.
 
 ### Unit-token limitation (design-defining)
 
-The 1.x API cannot enumerate arbitrary on-screen creatures. We can only query
-units we hold a **unit token** for. Classic tokens usable here:
+No WoW API generation can enumerate arbitrary on-screen creatures. We can only
+query units we hold a **unit token** for. Tokens tracked (spot-check §12.6):
 
 `player, pet, focus, target, targettarget, partyleader, party1-4, raid1-20,
 arena1-4, mouseover`
@@ -120,6 +130,37 @@ both covered.
             │ + validate   │ │ widgets)    │ │              │
             └──────────────┘ └──────────────┘ └──────────────┘
 ```
+
+### 3.0 Pivot (2026-10-13): UI-anchored covers, not 3D-follow
+
+M1 probes proved this client has **no** world→screen API (`WorldFramePoint3D`
+and `C_Map.PositionToScreen` both absent) and **no** unit-position API
+(`GetUnitPosition` absent), so a shield that tracks a spider's 3D position is
+**infeasible on this build**. The pivot keeps the owner's hard constraint
+(UI-layer only, no model swaps) and covers what the API *can* see:
+
+- **Hover shield (auto):** while `mouseover` (or `target`/`focus`) resolves to
+  a spider, a cover disc renders at the **cursor** (hover) — the spider is
+  hidden while you point at / interact with it.
+- **Frame cover (auto):** when a tracked unit (target/focus/party/raid) is a
+  spider, its unit frame (`TargetFrame`, `FocusFrame`, party frames) is
+  covered by a tinted plate — hides the spider's name/health UI.
+- **Parkable shields (manual):** up to 8 pre-created, **draggable** cover discs
+  parented to `UIParent` — drag one over a spider, or pre-park them; positions
+  persist per profile; panic hotkey hides all (§4.5).
+- **Blind mode (auto/manual):** one large soft cover over the center of the
+  screen — "I don't want to see the middle of my screen right now"; toggled
+  by slash and/or the panic hotkey.
+
+Detection is **name-based** (§2 confirmed facts): default patterns
+`{"Spider", "Gloomweaver"}` + user `extraNames`; `UnitCreatureType` ("Beast")
+is too broad to be a spider signal. If a future client build adds
+`C_Map.PositionToScreen` + a position API, the 3D-follow design re-activates as
+a drop-in extension (projection is isolated in Project.lua, §3.2).
+
+**Owner decision pending (open Q5):** which combination ships in v1.0
+(recommendation: hover shield + parkable shields + blind mode + panic hotkey;
+frame cover is a cheap extra).
 
 ### 3.1 Tracking (Units.lua)
 
@@ -418,13 +459,15 @@ mouseover).
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| 1 | Wrong `## Interface:` number → addon won't load | Medium | Blocker | M1 gate: `GetBuildInfo()` first; list all confirmed numbers in TOC |
-| 2 | `WorldFramePoint3D` absent on this build | Low | Blocker | M1 probe; if absent, stop and re-scope (addon is infeasible without a world→screen API) |
-| 3 | `GetUnitFamily` absent/localized | Medium | Medium | `UnitCreatureType` + `extraNames` fallbacks; data-driven |
+| 1 | ~~Wrong `## Interface:` number~~ **RESOLVED**: 16001 confirmed (2026-10-13) | — | — | `GetBuildInfo()` 4th value; Spoken TOC cross-check |
+| 2 | ~~No world→screen projection~~ **CONFIRMED ABSENT** (with `GetUnitPosition` and `C_Map.PositionToScreen`) | — | Rescoped | Pivoted to UI-anchored covers (§3.0); 3D-follow re-activates only if a future build adds projection |
+| 3 | ~~`GetUnitFamily` absent~~ **CONFIRMED ABSENT**; `UnitCreatureType`="Beast" too broad | — | Resolved | Name-based detection: patterns `{"Spider","Gloomweaver"}` + user `extraNames` (§3.0) |
 | 4 | Cover undersized for large/flat spiders | Medium | Medium | sizeScale/minSize/maxSize/yOffset tuning; v1.1 wide rect + height table |
 | 5 | Can't cover non-token spiders (API boundary) | Certain | Medium | Documented limitation; target+mouseover cover the real pain points |
 | 6 | Proton/Wine path quirks | Low | Low | Standard folder copy into `Interface/AddOns/` (symlinked); test at M2 |
-| 7 | "New content" spiders with unknown family strings | Medium | Low | `extraNames` list; selftest prints family of current target for discovery |
+| 7 | ~~"New content" spiders with unknown family strings~~ | — | Resolved | Name-based: `/spider add <name>`, selftest prints target **name** for discovery |
+| 8 | Name-based detection misses spiders without a matching name pattern | Medium | Medium | Defaults include "Spider"+"Gloomweaver"; user `extraNames`; config window shows tracked spider list; document how to add names |
+| 9 | Beta client API surface may still shift before out-of-beta release | Medium | Medium | All API use goes through a thin compat layer (Compat.lua) so one API swap = one-line change; re-run §12 probes on the release client |
 
 ## 10. Open questions
 
@@ -433,6 +476,10 @@ mouseover).
    soft patch; generator `tools/make_art.py`), tinted by the user's color/opacity.
 3. ~~Icon~~ — resolved: original generated 32x32 "no spider" icon (`icon.tga`).
 4. Panic hotkey — owner decision pending (mechanism documented in §4.5).
+5. **Pivot feature set (2026-10-13, §3.0):** 3D-follow is infeasible on this
+   client. Owner to pick v1.0 scope among: hover shield (auto), frame cover
+   (auto), parkable shields (manual), blind mode. Recommendation: hover +
+   parkable + blind + panic hotkey; frame cover optional.
 
 ## 11. Conventions
 
@@ -543,3 +590,21 @@ longer fatal if `C_Map.PosToScreen = true` (modern projection path);
 `numAuras_vals = 1` + `_VERSION = Lua 5.1` confirms modern generation;
 `family = API_MISSING` forces detection onto `creatureType`/`extraNames`
 (both already in the design, §3.1).
+
+### 12.6 Probe round 3 (SBG3) — confirms pivot building blocks (2026-10-13)
+
+Purpose: (1) final check for any alternative projection/position API; (2)
+confirm the building blocks of the pivoted design (§3.0): cursor position,
+screen info, player-detection replacement, unit-frame availability, modern
+aura API, sound, Bindings. All lines nil-safe, each ≤ 255 chars. Run R1 first
+only if `SBG2` was cleared; then any order. R7 needs a spider targeted.
+
+```
+/run local p=SBG2.p; p("C_Map.ScreenToPosition",C_Map.ScreenToPosition~=nil); p("GetCameraPosition",GetCameraPosition~=nil); p("GetUnitWorldPosition",GetUnitWorldPosition~=nil); p("GetViewingInfo",GetViewingInfo~=nil)
+/run local p=SBG2.p; p("GetCursorPosition",GetCursorPosition~=nil); p("GetEffectiveScreenInfo",GetEffectiveScreenInfo~=nil); p("UnitClass",UnitClass~=nil); p("UnitFactionGroup",UnitFactionGroup~=nil); p("UnitIsUnit",UnitIsUnit~=nil)
+/run local p=SBG2.p; p("TargetFrame",TargetFrame~=nil); p("FocusFrame",FocusFrame~=nil); p("MouseOverInfoFrame",MouseOverInfoFrame~=nil); p("PartyFrame",PartyFrame~=nil); p("MainMenuBar",MainMenuBar~=nil)
+/run local p=SBG2.p; if GetEffectiveScreenInfo then local w,h,s=GetEffectiveScreenInfo(); p("screen",w.."x"..h.." scale="..tostring(s)) end; if UnitClass then p("playerClass",UnitClass("player")) end
+/run local p=SBG2.p; p("playerFaction",UnitFactionGroup and UnitFactionGroup("player") or "API_MISSING"); p("mouseover_class",UnitClass and UnitClass("mouseover") or "n/a")
+/run local p=SBG2.p; p("C_UnitAura",C_UnitAura~=nil); p("C_UnitAura.Count",C_UnitAura and C_UnitAura.GetNumUnitAuras and "fn" or "no"); p("PlaySoundFile",PlaySoundFile~=nil); p("Bindings_table",type(Bindings)=="table")
+/run local p=SBG2.p; if C_UnitAura and C_UnitAura.GetNumUnitAuras then p("targetAuras",C_UnitAura.GetNumUnitAuras("target")) else p("targetAuras","API_MISSING") end
+```
