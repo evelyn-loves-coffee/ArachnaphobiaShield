@@ -35,8 +35,12 @@ Facts (verified from the local installation):
 - Client install: `World of Warcraft/_classic_beta_/Interface/` (Steam/Proton prefix).
 - Addons are classic-style: one folder in `Interface/AddOns/`, one `.toc` whose
   filename equals the folder name and `## Title`, files listed in the `.toc`.
-- Addon scripting is **Lua 5.0**: no `//`, no `table.pack`, no `goto`, no bitwise
-  ops, no `math.huge`. `^` works, `unpack` exists, `#` works.
+- Addon scripting is **Lua 5.0** (assumed): no `//`, no `table.pack`, no `goto`,
+  no bitwise ops, no `math.huge`. `^` works, `unpack` exists, `#` works.
+  **The owner notes the client may ship a newer Lua — unverified.** Policy: write
+  5.0-compatible code (it runs unchanged on 5.1+). Never use `//`, `table.pack`,
+  `goto`; if unpacking is needed use `local UNPACK = table.unpack or unpack`.
+  Actual version confirmed via the §12 in-client script (M1).
 
 APIs this plan relies on (classic-era):
 
@@ -58,9 +62,10 @@ Known **absences** (do not use): `C_*` namespaces, `C_Timer`, `SlashCmdList`,
 tokens, any unit-enumeration API.
 
 > **M1 gate:** the exact `## Interface:` number for the 1.60.1 client is unknown
-> until we run `/run print(GetBuildInfo())` in-game. Until then the `.toc` is
-> blocked. A mismatched interface number means the client lists the addon as
-> out-of-date and it will not load.
+> until we run the in-client verification scripts (§12) in-game. Until then the
+> `.toc` is blocked. A mismatched interface number means the client lists the
+> addon as out-of-date and it will not load. Classic mapping (1.15.09 → 11509)
+> suggests 1.60.1 ≈ **10601**, but the `GetBuildInfo()` output is authoritative.
 
 ### Unit-token limitation (design-defining)
 
@@ -139,9 +144,11 @@ This two-point projection gives correct perspective scaling for free.
 ### 3.3 Cover rendering (Cover.lua)
 
 - **Frame pool**: N frames (N = max tracked units = 24) pre-created at load —
-  zero allocation in the per-frame loop. Each cover = Frame + child Texture
-  (solid color + alpha) + optional thin border + optional `GameFontHighlightSmall`
-  name label above it.
+  zero allocation in the per-frame loop. Each cover = Frame + child Texture —
+  art: the generated `cover.tga` (soft tintable squircle patch, 64×64 32-bit),
+  tinted to the user's color via `SetTexture(path, r, g, b)`; falls back to a
+  solid `SetTexture(r, g, b, a)` if the TGA is missing — plus an optional
+  `GameFontHighlightSmall` name label above it.
 - Strata: `HIGH` (above MEDIUM default UI, below DIALOG; the 3D world is always
   behind all UI strata, so any stratum covers the model — HIGH chosen so the
   shield sits over action bars etc.). Frame level within stratum by distance
@@ -171,12 +178,16 @@ SpidersBeGone-ArachnaphobiaAddon/
 ├── LICENSE                    MIT
 ├── .gitignore
 ├── docs/
-│   └── PLAN.md                this file
+│   ├── PLAN.md                this file
+│   └── art/                   PNG previews of the generated art
+├── tools/
+│   └── make_art.py            regenerates all art (stdlib only) → re-run anytime
 └── SpidersBeGone/             ← copy this folder to Interface/AddOns/
     ├── SpidersBeGone.toc      Interface (TBD M1), Title "Spiders Be Gone",
     │                          Notes, Version, Author, IconTexture,
     │                          SavedVariables: SBeGoneSettings
-    ├── icon.tga               original 32x32 art (no Blizzard assets)
+    ├── icon.tga               original 32x32 "no spider" icon (generated)
+    ├── cover.tga              original 64x64 tintable cover patch (generated)
     ├── Core.lua               init/lifecycle/driver/debug ring buffer
     ├── Units.lua              tracked tokens + spider predicate
     ├── Project.lua            world→screen (pure functions)
@@ -242,6 +253,21 @@ take effect next frame.
 32x32 button parented to `Minimap`, toggles the config window; reposition on
 `MINIMAP_UPDATE_ZOOM` (verify event exists on this build; else OnUpdate poll of
 `Minimap` width). Kept out of v1.0 scope.
+
+### 4.5 Panic hotkey (v1.1 candidate — owner decision pending)
+
+A keybind that instantly hides **all** covers (press again to restore), no chat
+needed — for when a cover occludes something the player must see. Classic (1.x)
+binding mechanism:
+
+- TOC: `## BindingName: SBeGoneBindingName`
+- Lua: `SBeGoneBindingName = { SBG_HIDE_COVERS = "Show/Hide all covers" }` plus a
+  global `SBeGoneBindingCommand(key, isDown)` that toggles a session-level
+  `hidden` flag (the driver skips all placement while set).
+- Default **unbound** (F1/F2 are vanilla default action keys); F12 suggested.
+  State resets on reload, so it can never leave the player permanently hidden.
+
+Exact TOC field name to be confirmed against this client's UI conventions at M1.
 
 ## 5. Performance budget (details in §8 PAWS)
 
@@ -385,19 +411,73 @@ mouseover).
 
 ## 10. Open questions
 
-1. Repo visibility — created **private**; say the word to make it public
-   (`gh repo edit --visibility=public`).
-2. Cover appearance v1: solid color (default deep red, 85% opacity) — acceptable,
-   or do you want original art from day one?
-3. Icon: I'll generate an original 32x32 TGA (spider silhouette with a slash);
-   provide one if you'd rather supply your own.
-4. Panic hotkey (F-key to hide all covers) — v1.1 candidate; needed for v1.0?
+1. ~~Repo visibility~~ — resolved: **public**.
+2. ~~Cover appearance~~ — resolved: original generated art (`cover.tga`, tintable
+   soft patch; generator `tools/make_art.py`), tinted by the user's color/opacity.
+3. ~~Icon~~ — resolved: original generated 32x32 "no spider" icon (`icon.tga`).
+4. Panic hotkey — owner decision pending (mechanism documented in §4.5).
 
 ## 11. Conventions
 
-- Lua 5.0 only. No global pollution: all state under one `local SBeGone = {}`
+- Lua 5.0-compatible (see §2). No global pollution: all state under one `local SBeGone = {}`
   namespace table (plus the SV table); files attach to it.
 - No per-frame string concatenation outside debug mode.
 - Comments: `--` only, short; each file starts with a one-line purpose comment.
 - Git: `main` branch, conventional-ish lowercase commit messages, tag `v1.0.0`
   at M6. Addon folder name == TOC file name == `SpidersBeGone`.
+
+## 12. M1 in-client verification scripts
+
+Run in-game, in character (chat box). All output is prefixed `SBG|`. The single
+line reports every plan assumption; the individual lines are the same probes for
+readability.
+
+### 12.1 One-shot report (one line, paste after the chat input)
+
+```
+/run local function p(k,v) print(("SBG| %s: %s"):format(k, tostring(v))) end; local a,b,c,d = GetBuildInfo(); p("buildInfo", string.format("major=%s minor=%s patch=%s build=%s", tostring(a), tostring(b), tostring(c), tostring(d))); p("lua50_marker", select(2, _G)); p("_VERSION", _VERSION); p("unpack_global", unpack ~= nil); p("table.unpack", rawget(table, "unpack") ~= nil); p("table.pack", rawget(table, "pack") ~= nil); p("math.huge", math.huge ~= nil); p("WorldFramePoint3D", WorldFramePoint3D ~= nil); p("GetUnitFamily", GetUnitFamily ~= nil); p("UnitCreatureType", UnitCreatureType ~= nil); p("GetUnitPosition", GetUnitPosition ~= nil); p("GetNumAuras_returns", GetNumAuras and select("#", GetNumAuras("player")) or "n/a"); p("screen", (function() local w,h,s = GetScreenSize(); return string.format("%sx%s scale=%s", w, h, tostring(s)) end)()); p("locale", GetLocale()); p("zone", GetZoneText()); p("Minimap", Minimap ~= nil); p("GameFontHighlightSmall", GameFontHighlightSmall ~= nil); p("SetBackdrop", SetBackdrop ~= nil); p("core_unit_apis", (UnitIsVisible and UnitIsDead and UnitCanAttack and UnitLevel and UnitName and IsPlayerUnit and GetUnitAura and "all_present") or "SOME_MISSING"); local px,py,pz = GetUnitPosition("player"); p("playerPos", string.format("%.1f %.1f %.1f", px, py, pz)); if WorldFramePoint3D then local sx,sy,beh = WorldFramePoint3D(px,py,pz); p("projPlayerScreen", string.format("x=%s y=%s behind=%s", tostring(sx), tostring(sy), tostring(beh))) end
+```
+
+### 12.2 Individual probes
+
+```lua
+/run print("SBG lua: 5.0marker=" .. tostring(select(2, _G)) .. " _VERSION=" .. tostring(_VERSION) .. " table.unpack=" .. tostring(rawget(table, "unpack") ~= nil) .. " table.pack=" .. tostring(rawget(table, "pack") ~= nil) .. " math.huge=" .. tostring(math.huge ~= nil))
+```
+
+```lua
+/run local a,b,c,d = GetBuildInfo(); print("SBG buildInfo: major=" .. tostring(a) .. " minor=" .. tostring(b) .. " patch=" .. tostring(c) .. " build=" .. tostring(d))
+```
+
+```lua
+/run print("SBG WorldFramePoint3D=" .. tostring(WorldFramePoint3D ~= nil) .. " GetUnitPosition=" .. tostring(GetUnitPosition ~= nil) .. " GetUnitFamily=" .. tostring(GetUnitFamily ~= nil) .. " UnitCreatureType=" .. tostring(UnitCreatureType ~= nil))
+```
+
+```lua
+/run local px,py,pz = GetUnitPosition("player"); print("SBG playerPos:", px, py, pz); local sx,sy,beh = WorldFramePoint3D(px,py,pz); print("SBG proj:", sx, sy, beh)
+```
+
+```lua
+/run print("SBG GetNumAuras(player) returns:", select("#", GetNumAuras("player")), "values")
+```
+
+```lua
+/run local w,h,s = GetScreenSize(); print("SBG screen:", w, "x", h, "scale", s, "locale:", GetLocale(), "zone:", GetZoneText())
+```
+
+### 12.3 Spider probe (target a spider first, ideally a small + a large one)
+
+```lua
+/run local n = UnitName("target"); print("SBG target: name=" .. tostring(n) .. " family=" .. tostring(GetUnitFamily("target")) .. " creatureType=" .. tostring(UnitCreatureType("target")) .. " level=" .. tostring(UnitLevel("target")))
+```
+
+### 12.4 Interpretation
+
+| Output | Confirms |
+|---|---|
+| `lua50_marker` = `Lua 5.0` | Lua 5.0 as assumed |
+| marker nil + `_VERSION` set | newer Lua (5.1+); 5.0-compatible code still valid |
+| `buildInfo` major/minor/patch | the exact `## Interface:` number (classic mapping major·10000 + minor·100 + patch) |
+| `WorldFramePoint3D = true` | core feasibility (risk #2 cleared) |
+| `GetNumAuras_returns = 2` | classic-era aura API shape (not 3.0+) |
+| `projPlayerScreen` x/y numbers, `behind=false` | world→screen projection works in this client |
+| spider probe `family=` value | the exact family string(s) for `settings.families` (risk #7) |
