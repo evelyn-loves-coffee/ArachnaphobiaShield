@@ -49,6 +49,16 @@ default-UI globals `MouseOverInfoFrame`, `PartyFrame1`, `MainMenuBar` (so:
 no party-frame covers; screen placement uses `UIParent` +
 `GetEffectiveScreenInfo`).
 
+## Confirmed PRESENT — frame events (SBG6, 2026-10-13)
+
+`UNIT_TARGET`, `PLAYER_ENTERING_WORLD`, `ZONE_CHANGED_NEW_AREA`,
+`VARIABLES_LOADED`, `UNIT_AURA`, `PLAYER_LOGIN` (pcall `RegisterEvent` — the
+client *errors* on unknown events, so only these may be registered, or every
+registration must be pcall-guarded).
+
+**Absent events (SBG6):** `MOUSEOVER`, `UPDATE`, `KEY_DOWN`, `KEY_UP`,
+`PARTY_UPDATE`, `RAID_UPDATE`, `CHAT_COMMAND`, `ACTIONBAR_BUTTON_UP`.
+
 ## Confirmed DEAD ENDS (tested)
 
 - **`ClosestUnitPosition(1504)` → nil** while standing in Tirisfal Glades
@@ -83,9 +93,23 @@ no party-frame covers; screen placement uses `UIParent` +
    build.
 6. **`UnitCanAttack` is two-arg on this client**: `UnitCanAttack(unit,
    target)` — use `UnitCanAttack("player", unit)` for "hostile to me".
-7. Events in general remain largely unconfirmed (only known-absent:
-   `CHAT_COMMAND`) → `OnUpdate` polling is the primary refresh mechanism
-   (PLAN.md §3.4). Event availability probe: SBG6 (PLAN.md §12.9).
-8. Panic hotkey: `Bindings` table absent → mechanism must be a `KEY_DOWN`
-   frame event (availability in SBG6) or modifier-key polling; decision
-   pending SBG6 (PLAN.md §4.5).
+7. **Events are mapped (SBG6, 2026-10-13):** present = `UNIT_TARGET`,
+   `PLAYER_ENTERING_WORLD`, `ZONE_CHANGED_NEW_AREA`, `VARIABLES_LOADED`,
+   `UNIT_AURA`, `PLAYER_LOGIN`; absent = `MOUSEOVER`, `UPDATE`, `KEY_DOWN`,
+   `KEY_UP`, `PARTY_UPDATE`, `RAID_UPDATE`, `CHAT_COMMAND`,
+   `ACTIONBAR_BUTTON_UP`. Hover detection must **poll** the `mouseover`
+   token; the driver must not rely on `RegisterEvent("UPDATE")` (PLAN.md
+   §3.4, SBG7 §12.10).
+8. Panic hotkey: `KEY_DOWN` absent → mechanism is **`Bindings.xml`**
+   (Spoken pattern, listed in our TOC) with modifier-key polling as
+   fallback; `/spider hide` is the guaranteed fallback (PLAN.md §4.5).
+
+## M2 in-game verification (2026-10-13)
+
+- `/reload` → no error after removing the `CHAT_COMMAND` registration.
+- `/spider` → prints both selftest lines (two-part slash registration
+  verified working in-game: `SLASH_SPIDER1 = "/spider"` +
+  `SlashCmdList["SPIDER"]`).
+- `/run print(SBeGone and SBeGone.version or "NOT LOADED")` → `0.1.0`.
+- **M2 complete.** Next: M3 (sticky hover shield + parkable shields, pure
+  implementation — every API it needs is verified above).

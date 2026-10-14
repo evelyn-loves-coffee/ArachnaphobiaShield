@@ -4,9 +4,12 @@ Addon for **World of Warcraft Forever** (classic 1.x-line client, v1.60.1) that
 covers spider models with a screen-anchored UI element. UI-layer only: no model
 swaps, no game-file modification.
 
-**Status:** M2 — skeleton loads, full cover features in progress. See
-[docs/PLAN.md](docs/PLAN.md) for the full design, the confirmed API surface
-of the 1.60.1 client, milestones, and PAWS review.
+**Status:** M2 complete (2026-10-13 — loads clean, `/spider` selftest
+verified in-game). Next: M3 (sticky hover shield + parkable shields). See
+[docs/PLAN.md](docs/PLAN.md) for the full design and the confirmed API
+surface of the 1.60.1 client, [docs/HANDOFF.md](docs/HANDOFF.md) for resuming
+from a fresh session, and [docs/API-VERIFICATION.md](docs/API-VERIFICATION.md)
+for the M1 exit record.
 
 ## Install
 

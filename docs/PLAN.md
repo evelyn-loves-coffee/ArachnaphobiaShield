@@ -107,9 +107,24 @@ addon on this exact client (Spoken_Books/Commands.lua) proved the actual
 mechanism — **classic two-part registration**: `_G.SLASH_<GROUP>N = "/cmd"`
 globals declare the typed command strings, and `SlashCmdList["<GROUP>"] =
 function(msg)` (uppercase group name) is the handler; `msg` is the rest of
-the line after the command word. **`Bindings` table absent** (§4.5
-hotkey needs the `KEY_DOWN`-event or polling fallback — probe §12.9).
-**`UnitCanAttack` is two-arg on this client**: `UnitCanAttack(unit, target)`.
+the line after the command word. **`Bindings` table absent** (§4.5; SBG6 also killed the `KEY_DOWN`
+event route — `Bindings.xml` is the live candidate).
+**`UnitCanAttack` is two-arg on this client**: `UnitCanAttack(unit, target)`
+(use `UnitCanAttack("player", unit)` for hostile checks).
+
+**SBG6 results (2026-10-13, event availability map)** — run with mouse over a
+spider AND the spider targeted (pcall `RegisterEvent`; the client *errors* on
+unknown events): **present** = `UNIT_TARGET`, `PLAYER_ENTERING_WORLD`,
+`ZONE_CHANGED_NEW_AREA`, `VARIABLES_LOADED`, `UNIT_AURA`, `PLAYER_LOGIN`.
+**Absent** = `MOUSEOVER`, `UPDATE`, `KEY_DOWN`, `KEY_UP`, `PARTY_UPDATE`,
+`RAID_UPDATE`, `CHAT_COMMAND`, `ACTIONBAR_BUTTON_UP`. Consequences: hover
+detection must **poll** the `mouseover` token each tick; the panic hotkey
+cannot use `KEY_DOWN` (§4.5); the driver must not rely on
+`RegisterEvent("UPDATE")` (§3.4, SBG7 §12.10).
+
+**M2 in-game verified (2026-10-13):** clean `/reload`; `/spider` prints both
+selftest lines (two-part Spoken-style registration works); `/run` load-check
+returns `0.1.0`.
 
 APIs the plan relies on (**confirmed** 2026-10-13 unless noted):
 
@@ -290,13 +305,20 @@ This two-point projection gives correct perspective scaling for free.
 - Modern codebase (confirmed): all `.lua` files run at client load
   (character-select time). Initialize structures at file load, arm the driver
   on `PLAYER_ENTERING_WORLD`, reset all covers on logout events.
-- **Events are unconfirmed** on this client (wiki table tracks functions only,
-  not events). Design decision: **`OnUpdate` polling is the primary refresh
-  mechanism** (re-scan the tracked token list every ~200 ms — 5 calls per
-  token, trivial cost); registered events (`MOUSEOVER`, `UNIT_TARGET`,
-  `PARTY_UPDATE`, `RAID_UPDATE`, …) are pure optimizations, registered
-  best-effort (a missing event name is a silent no-op, so nothing breaks).
+- **Events are mapped (SBG6, 2026-10-13).** Present: `UNIT_TARGET`,
+  `PLAYER_ENTERING_WORLD`, `ZONE_CHANGED_NEW_AREA`, `VARIABLES_LOADED`,
+  `UNIT_AURA`, `PLAYER_LOGIN`. Absent: `MOUSEOVER`, `UPDATE`, `KEY_DOWN`,
+  `KEY_UP`, `PARTY_UPDATE`, `RAID_UPDATE`, `CHAT_COMMAND`,
+  `ACTIONBAR_BUTTON_UP`. **`RegisterEvent` *errors* on unknown events** —
+  every registration must come from the present list (or be pcall-guarded).
   Classic-only event names (e.g. `UPDATE_AURAS`) are **not** used.
+- **Driver (tick loop):** `OnUpdate` script on one driver frame if SBG7
+  (§12.10) confirms it (expected — the script system is separate from the
+  pruned event system); otherwise a `C_Timer.After(0.1, tick)`
+  self-rescheduling loop (C_Timer confirmed present). Either way the same
+  tick function re-scans the tracked token list at ~10 Hz (5 cheap calls per
+  token, trivial cost) and re-places covers. Registered events are pure
+  optimizations on top (e.g. `UNIT_TARGET` to refresh the tracked set sooner).
 - Guarded init (idempotent), `settings.enabled` gate checked per frame (cheap).
 - `/reload` safe: everything rebuilds from `SavedVariables` + defaults.
 
@@ -368,8 +390,12 @@ take effect next frame.
 
 ### 4.3 Slash command
 
-`/spider` (aliases `/spiderbe`, `/sb`) — classic registration:
-`SLASH_SPIDER1..3`, handler on `CHAT_COMMAND` reading `CHAT_COMMAND1`.
+`/spider` (alias `/spidergone`) — **two-part registration (confirmed
+working in-game 2026-10-13; there is no `CHAT_COMMAND` event on this
+client)**: `_G.SLASH_SPIDER1 = "/spider"`, `_G.SLASH_SPIDER2 =
+"/spidergone"`, `SlashCmdList["SPIDER"] = function(msg) … end` (msg = rest
+of line, may be nil). Pattern taken from the Spoken addon, which works on
+this client.
 
 | cmd | effect |
 |---|---|
@@ -391,22 +417,23 @@ take effect next frame.
 A keybind that instantly hides **all** covers (press again to restore), no chat
 needed — for when a cover occludes something the player must see.
 
-**Mechanism (updated 2026-10-13, SBG5 + Spoken reference):** the Lua
-`Bindings` table is **absent** on this client; keybindings are XML
-(`<Bindings>` files — Spoken ships a `Bindings.xml` with
-`<Binding name="..." header="...">LuaExpression()</Binding>` entries, though
-notably it is *not* listed in its TOC, so its loading is itself unverified).
-Fallback plan, in order:
-1. `KEY_DOWN` frame event (availability: probe §12.9 / SBG6): a driver frame
-   registers `KEY_DOWN` and matches the bound key name (default **F12**; F1/F2
-   are vanilla action keys), toggling a session-level `hidden` flag (driver
-   skips all placement while set).
-2. `Bindings.xml` (Spoken pattern, listed in our TOC properly): a named
-   binding calling a global toggle function.
-3. If neither works: modifier-key polling in the existing OnUpdate (crude but
+**Mechanism (final order, SBG6 2026-10-13 — `KEY_DOWN` is absent, so the
+event route is dead):** the Lua `Bindings` table is **absent** on this
+client; keybindings are XML (`<Bindings>` files — Spoken ships a
+`Bindings.xml` with `<Binding name="..." header="...">LuaExpression()</Binding>`
+entries, though notably it is *not* listed in its TOC, so its loading is
+itself unverified). In order:
+1. **`Bindings.xml`** (Spoken pattern, properly listed in our TOC): a named
+   binding (e.g. `SBG_HIDE_COVERS`, header "SPIDERS BE GONE", default key
+   **F12**) calling a global `SBeGoneBindingCommand()` that toggles a
+   session-level `hidden` flag (driver skips all placement while set).
+   Verification step: our file must actually load — check the client's
+   key-binding UI for the "SPIDERS BE GONE" header (Spoken's own unlisted
+   file may never have loaded either).
+2. If (1) doesn't load: modifier-key polling in the driver tick (crude but
    dependency-free).
+3. `/spider hide` (slash) — always available, guaranteed fallback.
 State resets on reload, so it can never leave the player permanently hidden.
-`/spider off` remains the guaranteed fallback.
 
 ## 5. Performance budget (details in §8 PAWS)
 
@@ -423,7 +450,7 @@ State resets on reload, so it can never leave the player permanently hidden.
 |---|---|---|---|
 | M0 | Repo + this plan | committed, pushed | ✅ done |
 | M1 | In-game API verification (probe rounds SBG1–SBG4, §12) | `docs/API-VERIFICATION.md` written from real sessions | ✅ done (2026-10-13) |
-| M2 | TOC + load skeleton: `SpidersBeGone.toc` (interface 16001), `Core.lua`, SavedVariables, `/spider` selftest, generated icon | addon loads, appears in AddOns list, `/spider` prints build info, `/run` load-check works | 🚧 built + installed (2026-10-13); in-game check pending |
+| M2 | TOC + load skeleton: `SpidersBeGone.toc` (interface 16001), `Core.lua`, SavedVariables, `/spider` selftest, generated icon | addon loads, appears in AddOns list, `/spider` prints build info, `/run` load-check works | ✅ done (2026-10-13: clean `/reload`, `/spider` prints both selftest lines, `/run` load-check = 0.1.0) |
 | M3 | **Hover shield** (auto: cursor-anchored cover while mouseover is a spider) + **parkable shields** (manual draggable covers, positions saved) | hovering a Tirisfal spider hides its model; shields persist across `/reload` and logout | next |
 | M4 | **Blind mode** + **panic hotkey** (§4.5) + **frame cover** for target/focus (optional) | panic key instantly hides all covers; frame cover tracks the target frame | — |
 | M5 | Config window (color, opacity, size, extraNames, enable toggles) + SavedVariables polish (migrate/reset/validation) | settings survive logout/reload; corrupt SV self-heals | — |
@@ -559,12 +586,15 @@ mouseover).
 2. ~~Cover appearance~~ — resolved: original generated art (`cover.tga`, tintable
    soft patch; generator `tools/make_art.py`), tinted by the user's color/opacity.
 3. ~~Icon~~ — resolved: original generated 32x32 "no spider" icon (`icon.tga`).
-4. Panic hotkey — owner decision pending (mechanism documented in §4.5).
+4. Panic hotkey — owner decision pending (mechanism documented in §4.5;
+   SBG6 killed the `KEY_DOWN` route — `Bindings.xml` is the live candidate).
 5. **Pivot feature set (2026-10-13, §3.0):** 3D-follow is infeasible on this
-   client (SBG4 closed the 3D path). Owner to pick v1.0 scope among: hover
-   shield (auto), frame cover (auto), parkable shields (manual), blind mode.
-   Recommendation: hover + parkable + blind + panic hotkey; frame cover
-   optional. **Defaulting to the recommendation unless owner objects.**
+   client (SBG4 closed the 3D path). Owner requirement recorded 2026-10-13:
+   **cover ALL spiders** — covers must persist, not just last while hovered
+   (→ sticky hover shield, `stickyCovers` default on). v1.0 scope: sticky
+   hover shield + parkable shields + blind mode + `/spider clear`; frame
+   cover optional; panic hotkey TBD. **Defaulting to this unless owner
+   objects.**
 
 ## 11. Conventions
 
@@ -807,3 +837,34 @@ line 1 after `/reload`).
   OnUpdate polling (PLAN.md §3.4). The frames left registered on `SBG2.f`
   are harmless (no OnEvent scripts) but `/reload` (or re-running line 1) keeps
   things clean.
+
+**SBG6 results (2026-10-13; mouse over a spider, spider targeted):**
+present = `UNIT_TARGET`, `PLAYER_ENTERING_WORLD`, `ZONE_CHANGED_NEW_AREA`,
+`VARIABLES_LOADED`, `UNIT_AURA`, `PLAYER_LOGIN`; absent = `MOUSEOVER`,
+`UPDATE`, `KEY_DOWN`, `KEY_UP`, `PARTY_UPDATE`, `RAID_UPDATE`,
+`CHAT_COMMAND`, `ACTIONBAR_BUTTON_UP`. → hover detection must poll the
+`mouseover` token; the panic hotkey cannot use `KEY_DOWN` (see §4.5); the
+driver must not rely on `RegisterEvent("UPDATE")` (see §3.4, SBG7).
+
+### 12.10 Probe round 7 (SBG7) — driver primitives (2026-10-13)
+
+The tick driver (§3.4) needs one last confirmation: does the *script*
+system's `OnUpdate` work (it is separate from the pruned event system), and
+which `C_Timer` methods exist? Run both lines in order (line 2 prints
+`OnUpdate_ticks: 3` about a second after `armed: true`). Re-run the `SBG2`
+helper first if it was cleared.
+
+```
+/run local p=SBG2.p; p("CTimer_After",type(C_Timer and C_Timer.After)); p("CTimer_NewTimer",type(C_Timer and C_Timer.NewTimer)); p("CTimer_CancelAll",type(C_Timer and C_Timer.CancelAll))
+```
+```
+/run local p=SBG2.p; local f=CreateFrame("Frame"); f.sbgn=0; f:SetScript("OnUpdate",function(s,dt) s.sbgn=s.sbgn+1; if s.sbgn>=3 then s:SetScript("OnUpdate",nil); p("OnUpdate_ticks",s.sbgn) end end); p("armed",true)
+```
+
+**Interpretation:**
+- `OnUpdate_ticks: 3` appears → **driver = `OnUpdate` script** (best:
+  frame-synced, no drift).
+- `OnUpdate_ticks` never appears but `CTimer_After: function` → **driver =
+  `C_Timer.After(0.1)` self-rescheduling loop**.
+- Both dead (extremely unlikely) → stop and re-evaluate the design with the
+  owner; without a periodic driver nothing can tick.
