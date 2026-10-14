@@ -385,19 +385,20 @@ Exact TOC field name to be confirmed against this client's UI conventions at M1.
 
 ## 6. Milestones
 
-| # | Deliverable | Exit criteria |
-|---|---|---|
-| M0 | Repo + this plan | committed, pushed |
-| M1 | **In-game API verification** (manual): run `/run print(GetBuildInfo())`, `/run print(WorldFramePoint3D)` etc.; record real interface number + API availability | `docs/API-VERIFICATION.md` written from a real session |
-| M2 | TOC + load skeleton: `SpidersBeGone.toc`, `Core.lua`, `Config.lua`, `Slash.lua` (`help`, `toggle`, `selftest`); placeholder icon | addon loads, appears in AddOns list, `/spider help` works, `/spider selftest` prints |
-| M3 | Tracker + projection + single cover (target only) | targeting a spider in Elwynn/Duskwood shows a correctly-sized, correctly-placed shield that tracks movement & camera |
-| M4 | Full tracked set, frame pool, corpse/name-label options | all groups work; no per-frame allocations; debug ring buffer |
-| M5 | Config window + SavedVariables polish (migrate/reset/validation) | settings survive logout/reload; corrupt SV self-heals |
-| M6 | README, icon art, polish, `v1.0.0` tag | install-from-clone instructions verified end-to-end on the Proton client |
+| # | Deliverable | Exit criteria | Status |
+|---|---|---|---|
+| M0 | Repo + this plan | committed, pushed | ✅ done |
+| M1 | In-game API verification (probe rounds SBG1–SBG4, §12) | `docs/API-VERIFICATION.md` written from real sessions | ✅ done (2026-10-13) |
+| M2 | TOC + load skeleton: `SpidersBeGone.toc` (interface 16001), `Core.lua`, SavedVariables, `/spider` selftest, generated icon | addon loads, appears in AddOns list, `/spider` prints build info, `/run` load-check works | 🚧 built + installed (2026-10-13); in-game check pending |
+| M3 | **Hover shield** (auto: cursor-anchored cover while mouseover is a spider) + **parkable shields** (manual draggable covers, positions saved) | hovering a Tirisfal spider hides its model; shields persist across `/reload` and logout | next |
+| M4 | **Blind mode** + **panic hotkey** (§4.5) + **frame cover** for target/focus (optional) | panic key instantly hides all covers; frame cover tracks the target frame | — |
+| M5 | Config window (color, opacity, size, extraNames, enable toggles) + SavedVariables polish (migrate/reset/validation) | settings survive logout/reload; corrupt SV self-heals | — |
+| M6 | README, polish, `v1.0.0` tag | install-from-clone instructions verified end-to-end on the Proton client | — |
 
-Post-v1 candidates (roadmap, not planned work): 2:1 wide cover, per-level model-
-height table, other creature families, per-character settings, hotkey binding
-(`Bindings.xml`), i18n locales, minimap button.
+Post-v1 candidates (roadmap, not planned work): 2:1 wide cover, re-activating
+3D-follow if a future client build exposes unit positions + camera data
+(Project.lua seam, §3.2), other creature families, per-character settings,
+i18n locales, minimap button, panic hotkey default binding.
 
 ## 7. Testing & verification plan
 
