@@ -14,6 +14,10 @@
 
 ## 1. Purpose
 
+**Release context (2026-10-13):** the game is in **beta for ~1 week**;
+official out-of-beta release expected **next month**. Aim: v1.0 ready
+before/at the public release window.
+
 For players with arachnaphobia: when a spider is the player's target (or otherwise
 a "tracked" unit), a **screen-anchored UI element** is projected onto the spider's
 3D position every frame and visually covers the model.
@@ -500,25 +504,42 @@ readability.
 First in-client run (2026-10-13): the spider probe died with
 `attempt to call a nil value` — one of `UnitName`/`GetUnitFamily`/
 `UnitCreatureType`/`UnitLevel` is **absent** on this client — and the error
-stack revealed the modern codebase (see §2 finding). The SBG2 set below is
-nil-safe (missing → `MISSING` / `API_MISSING`) and adds modern-generation
-checks (`C_Timer`, `C_Map.PositionToScreen`, `SlashCmdList`, `Bindings`). Use
-these, not 12.1–12.3.
+stack revealed the modern codebase (see §2 finding). The SBG2 probes are
+nil-safe (missing → `MISSING` / `API_MISSING`) and add modern-generation
+checks (`C_Timer`, `C_Map.PositionToScreen`, `SlashCmdList`).
 
-**One-shot report** (one line, in character):
+**Client constraint (2026-10-13):** chat `/run` is capped at **255 chars
+including `/run`**. Use the split lines below (each ≤ 223 chars, measured).
+Line A1 defines a persistent helper — re-run it after any `/reload`.
+Cleanup when done: `/run SBG2=nil`.
 
-```
-/run local function p(k,v) print(("SBG2| %s: %s"):format(k, tostring(v))) end; local function f(k,nm) p(k, type(nm)=="function" and true or "MISSING") end; p("lua50_marker", select(2, _G)); p("_VERSION", _VERSION); p("unpack", unpack ~= nil); p("table.unpack", rawget(table, "unpack") ~= nil); p("table.pack", rawget(table, "pack") ~= nil); p("math.huge", math.huge ~= nil); f("WorldFramePoint3D", WorldFramePoint3D); f("GetUnitPosition", GetUnitPosition); f("GetUnitFamily", GetUnitFamily); f("UnitCreatureType", UnitCreatureType); f("UnitName", UnitName); f("GetUnitName", GetUnitName); f("UnitLevel", UnitLevel); f("UnitIsVisible", UnitIsVisible); f("UnitIsDead", UnitIsDead); f("UnitCanAttack", UnitCanAttack); f("IsPlayerUnit", IsPlayerUnit); f("GetNumAuras", GetNumAuras); f("GetUnitAura", GetUnitAura); f("GetScreenSize", GetScreenSize); p("C_Timer", C_Timer ~= nil); p("C_Map", C_Map ~= nil); p("C_Map.PositionToScreen", C_Map and type(rawget(C_Map, "PositionToScreen")) == "function" or false); p("SlashCmdList", SlashCmdList ~= nil); p("Bindings_table", type(Bindings) == "table"); local a,b,c,d = GetBuildInfo(); p("buildInfo", string.format("major=%s minor=%s patch=%s build=%s", tostring(a), tostring(b), tostring(c), tostring(d))); local px,py,pz; if type(GetUnitPosition)=="function" then px,py,pz = GetUnitPosition("player") end; if px then p("playerPos", string.format("%.1f %.1f %.1f", px,py,pz)); if type(WorldFramePoint3D)=="function" then local sx,sy,beh = WorldFramePoint3D(px,py,pz); p("proj_player", string.format("x=%s y=%s behind=%s", tostring(sx), tostring(sy), tostring(beh))) end; if C_Map and type(C_Map.PositionToScreen)=="function" then local cx,cy,cb = C_Map.PositionToScreen(px,py,pz); p("C_Map.proj_player", string.format("x=%s y=%s visible=%s", tostring(cx), tostring(cy), tostring(cb))) end end; if type(GetScreenSize)=="function" then local w,h,s = GetScreenSize(); p("screen", string.format("%sx%s scale=%s", w, h, tostring(s))) end; p("locale", GetLocale()); p("zone", GetZoneText())
-```
-
-**Spider probe** (target a spider first, ideally small + large):
+**Part A — environment (run A1 first, then A2–A12 in any order):**
 
 ```
-/run local function p(k,v) print(("SBG2| %s: %s"):format(k, tostring(v))) end; local u = "target"; local name = nil; if type(UnitName)=="function" then name = UnitName(u) end; if not name and type(GetUnitName)=="function" then name = GetUnitName(u) end; p("name", name or "?"); p("level", type(UnitLevel)=="function" and UnitLevel(u) or "API_MISSING"); if type(GetUnitFamily)=="function" then p("family", GetUnitFamily(u) or "nil") else p("family", "API_MISSING") end; if type(UnitCreatureType)=="function" then p("creatureType", UnitCreatureType(u) or "nil") else p("creatureType", "API_MISSING") end; local x,y,z; if type(GetUnitPosition)=="function" then x,y,z = GetUnitPosition(u) end; if x then p("pos", string.format("%.1f %.1f %.1f", x,y,z)) else p("pos", "nil (restricted or unknown)") end
+/run SBG2={p=function(k,v) print(("SBG2| %s: %s"):format(k,tostring(v))) end}
+/run local p=SBG2.p; p("lua50",select(2,_G)); p("_VERSION",_VERSION); p("t.unpack",rawget(table,"unpack")~=nil); p("t.pack",rawget(table,"pack")~=nil); p("math.huge",math.huge~=nil)
+/run local p=SBG2.p; p("WorldFramePoint3D",WorldFramePoint3D~=nil); p("GetUnitPosition",GetUnitPosition~=nil); p("GetUnitFamily",GetUnitFamily~=nil); p("UnitCreatureType",UnitCreatureType~=nil)
+/run local p=SBG2.p; p("UnitName",UnitName~=nil); p("GetUnitName",GetUnitName~=nil); p("UnitLevel",UnitLevel~=nil); p("UnitIsVisible",UnitIsVisible~=nil); p("UnitIsDead",UnitIsDead~=nil)
+/run local p=SBG2.p; p("UnitCanAttack",UnitCanAttack~=nil); p("IsPlayerUnit",IsPlayerUnit~=nil); p("GetNumAuras",GetNumAuras~=nil); p("GetUnitAura",GetUnitAura~=nil); p("GetScreenSize",GetScreenSize~=nil)
+/run local p=SBG2.p; p("C_Timer",C_Timer~=nil); p("C_Map",C_Map~=nil); p("C_Map.PosToScreen",C_Map and type(rawget(C_Map,"PositionToScreen"))=="function" or false); p("SlashCmdList",SlashCmdList~=nil)
+/run local p=SBG2.p; local a,b,c,d=GetBuildInfo(); p("buildInfo",string.format("major=%s minor=%s patch=%s build=%s",tostring(a),tostring(b),tostring(c),tostring(d)))
+/run local p=SBG2.p; if GetScreenSize then local w,h,s=GetScreenSize(); p("screen",w.."x"..h.." scale="..tostring(s)) end; p("locale",GetLocale()); p("zone",GetZoneText())
+/run local p=SBG2.p; local px,py,pz=GetUnitPosition("player"); p("playerPos",string.format("%.1f %.1f %.1f",px,py,pz))
+/run local p=SBG2.p; if WorldFramePoint3D then local px,py,pz=GetUnitPosition("player"); local sx,sy,beh=WorldFramePoint3D(px,py,pz); p("proj_player",sx.." "..sy.." "..tostring(beh)) end
+/run local p=SBG2.p; if C_Map and C_Map.PositionToScreen then local px,py,pz=GetUnitPosition("player"); local cx,cy,cb=C_Map.PositionToScreen(px,py,pz); p("proj_CMap",cx.." "..cy.." "..tostring(cb)) end
+/run local p=SBG2.p; if GetNumAuras then p("numAuras_vals",select("#",GetNumAuras("player"))) else p("numAuras_vals","API_MISSING") end
+```
+
+**Part B — spider probe (3 lines; target a spider first, ideally a small + a large one):**
+
+```
+/run local p=SBG2.p; local n; if UnitName then n=UnitName("target") elseif GetUnitName then n=GetUnitName("target") end; p("name",n); p("level",UnitLevel and UnitLevel("target") or "MISSING")
+/run local p=SBG2.p; if GetUnitFamily then p("family",GetUnitFamily("target") or "nil") else p("family","API_MISSING") end; if UnitCreatureType then p("ct",UnitCreatureType("target") or "nil") else p("ct","API_MISSING") end
+/run local p=SBG2.p; if GetUnitPosition then local x,y,z=GetUnitPosition("target"); if x then p("pos",string.format("%.1f %.1f %.1f",x,y,z)) else p("pos","nil/restricted") end else p("pos","API_MISSING") end
 ```
 
 **Interpretation deltas vs §12.4:** any `MISSING` on `WorldFramePoint3D` is no
-longer fatal if `C_Map.PositionToScreen = true` (modern projection path);
-`GetNumAuras_returns = 1` + `_VERSION = Lua 5.1` confirms modern generation;
+longer fatal if `C_Map.PosToScreen = true` (modern projection path);
+`numAuras_vals = 1` + `_VERSION = Lua 5.1` confirms modern generation;
 `family = API_MISSING` forces detection onto `creatureType`/`extraNames`
 (both already in the design, §3.1).
