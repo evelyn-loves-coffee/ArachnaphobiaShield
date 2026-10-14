@@ -76,9 +76,11 @@ no party-frame covers; screen placement uses `UIParent` +
 3. Player detection: `UnitClass(unit) ~= nil` (replaces absent
    `IsPlayerUnit`).
 4. Lua 5.1: never use `//`, `goto`, `table.pack`, bitwise ops.
-5. Slash commands: `SlashCmdList["spider"] = handler` (name-keyed lookup;
-   handler receives the rest of the line). No `CHAT_COMMAND` event on this
-   build. Classic `SLASH_` vars not relied on.
+5. Slash commands: **classic two-part registration** (proven by the working
+   Spoken addon on this client): `_G.SLASH_<GROUP>N = "/cmd"` globals +
+   `SlashCmdList["<GROUP>"] = function(msg)` handler (msg = rest of line).
+   Neither half alone is enough; there is no `CHAT_COMMAND` event on this
+   build.
 6. **`UnitCanAttack` is two-arg on this client**: `UnitCanAttack(unit,
    target)` — use `UnitCanAttack("player", unit)` for "hostile to me".
 7. Events in general remain largely unconfirmed (only known-absent:

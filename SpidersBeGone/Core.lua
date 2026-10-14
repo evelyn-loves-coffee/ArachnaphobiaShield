@@ -11,9 +11,12 @@ Invariants (see docs/PLAN.md):
 
 Client facts confirmed by in-client probes (2026-10-13, docs/PLAN.md §2):
   * GetBuildInfo() -> "1.60.1", "70374", "Oct 12 2026", "16001" (4 strings)
-  * modern codebase: SlashCmdList present; classic SLASH_ vars NOT relied on
+  * slash commands = classic two-part registration (SLASH_<GROUP>N globals +
+    SlashCmdList["<GROUP>"] handler) — proven by the working Spoken addon on
+    this exact client (Spoken_Books/Commands.lua); no CHAT_COMMAND event
   * GetUnitFamily/WorldFramePoint3D/GetUnitPosition absent (3D path closed)
   * UnitCreatureFamily works: wild spider -> ("Spider", 3)
+  * UnitCanAttack is TWO-ARG here: UnitCanAttack(unit, target)
 ]]
 
 SBeGone = SBeGone or {}
@@ -34,8 +37,8 @@ EnsureSettings()
 local lastSelftest = 0
 
 function SBeGone.Selftest()
-	-- Dedupe: the client may route the command through both SlashCmdList
-	-- and CHAT_COMMAND; print once per invocation.
+	-- Defensive dedupe: print at most once per 0.25s regardless of how the
+	-- command got invoked (slash, /run, double dispatch).
 	local now = GetTime()
 	if now - lastSelftest < 0.25 then
 		return
@@ -49,9 +52,28 @@ function SBeGone.Selftest()
 end
 
 -- ------------------------------------------------------- slash commands
--- This client dispatches slash commands by looking the command NAME up in
--- SlashCmdList (no CHAT_COMMAND event exists on this build — RegisterEvent
--- rejects it; confirmed 2026-10-13). The handler receives the rest of the
--- line as its argument.
-SlashCmdList["spider"] = SBeGone.Selftest
-SlashCmdList["spidergone"] = SBeGone.Selftest
+-- Registration is the classic two-part mechanism (confirmed by the working
+-- Spoken addon on this exact client): SLASH_<GROUP>N globals declare the
+-- typed command strings, SlashCmdList["<GROUP>"] is the handler and msg is
+-- the rest of the line after the command word. Setting SlashCmdList alone
+-- does NOT make the command known (client answers "Type /help..."), and
+-- there is no CHAT_COMMAND event to register (RegisterEvent rejects it).
+_G.SLASH_SPIDER1 = "/spider"
+_G.SLASH_SPIDER2 = "/spidergone"
+
+function SBeGone.Slash(msg)
+	-- M2: bare command = selftest. Subcommands land with M3/M5
+	-- (/spider clear, /spider off, /spider add <name>, ...).
+	local first = string.match(msg or "", "^%s*(%S*)") or ""
+	if first == "" then
+		SBeGone.Selftest()
+	elseif first == "clear" then
+		print("SBG| nothing to clear yet (covers arrive in M3)")
+	else
+		print(("SBG| unknown subcommand '%s' — bare /spider = selftest"):format(first))
+	end
+end
+
+SlashCmdList["SPIDER"] = function(msg)
+	SBeGone.Slash(msg)
+end

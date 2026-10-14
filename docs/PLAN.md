@@ -100,10 +100,14 @@ only), **`ClosestUnitPosition(1504)` → nil in a starting zone** (dead),
 ("Young Night Web Spider", ("Spider",3), visible, `UnitIsDead` tracks death
 state), frame globals `TargetFrame` ✓ / `FocusFrame` ✓ / `UIParent` ✓ but
 `MouseOverInfoFrame` ✗ / `PartyFrame1` ✗ / `MainMenuBar` ✗. **`CHAT_COMMAND`
-is not a registerable event on this client** (RegisterEvent rejects it) —
-slash dispatch is a direct name-keyed `SlashCmdList[name]` lookup (handler
-receives the rest of the line; the client's unknown-command fallback
-"Type /help..." confirmed the lookup path). **`Bindings` table absent** (§4.5
+is not a registerable event on this client** (RegisterEvent rejects it), and
+`SlashCmdList["spider"]` alone did **not** register the command (client
+answered the unknown-command fallback "Type /help..."). The working Spoken
+addon on this exact client (Spoken_Books/Commands.lua) proved the actual
+mechanism — **classic two-part registration**: `_G.SLASH_<GROUP>N = "/cmd"`
+globals declare the typed command strings, and `SlashCmdList["<GROUP>"] =
+function(msg)` (uppercase group name) is the handler; `msg` is the rest of
+the line after the command word. **`Bindings` table absent** (§4.5
 hotkey needs the `KEY_DOWN`-event or polling fallback — probe §12.9).
 **`UnitCanAttack` is two-arg on this client**: `UnitCanAttack(unit, target)`.
 
@@ -116,7 +120,7 @@ APIs the plan relies on (**confirmed** 2026-10-13 unless noted):
 | `UnitIsVisible`, `UnitIsDead`, `UnitCanAttack(unit, target)` (two-arg!) | tracking/detection guards | ✓ |
 | `UnitCreatureType` | sanity only (spiders report **"Beast"**) | ✓ |
 | `C_Timer` | timers | ✓ |
-| `SlashCmdList` (name-keyed lookup; **no CHAT_COMMAND event**) | slash commands | ✓ (SBG5) |
+| `SLASH_<GROUP>N` globals + `SlashCmdList["<GROUP>"]` handler (two-part, Spoken-verified) | slash commands | ✓ |
 | `GetBuildInfo()` → 4 **strings** (4th = interface no.) | interface check | ✓ |
 | `GetCursorPosition` | hover-shield anchor | ✓ (SBG5) |
 | `GetEffectiveScreenInfo` | screen size (replaces absent `GetScreenSize`) | ✓ (SBG4) |
@@ -387,15 +391,20 @@ take effect next frame.
 A keybind that instantly hides **all** covers (press again to restore), no chat
 needed — for when a cover occludes something the player must see.
 
-**Mechanism (updated 2026-10-13, SBG5):** the `Bindings` table is **absent**
-on this client, so the classic `## BindingName:` TOC mechanism is dead.
+**Mechanism (updated 2026-10-13, SBG5 + Spoken reference):** the Lua
+`Bindings` table is **absent** on this client; keybindings are XML
+(`<Bindings>` files — Spoken ships a `Bindings.xml` with
+`<Binding name="..." header="...">LuaExpression()</Binding>` entries, though
+notably it is *not* listed in its TOC, so its loading is itself unverified).
 Fallback plan, in order:
 1. `KEY_DOWN` frame event (availability: probe §12.9 / SBG6): a driver frame
    registers `KEY_DOWN` and matches the bound key name (default **F12**; F1/F2
    are vanilla action keys), toggling a session-level `hidden` flag (driver
    skips all placement while set).
-2. If `KEY_DOWN` is also absent: modifier-key polling in the existing OnUpdate
-   (crude but dependency-free; only if (1) fails).
+2. `Bindings.xml` (Spoken pattern, listed in our TOC properly): a named
+   binding calling a global toggle function.
+3. If neither works: modifier-key polling in the existing OnUpdate (crude but
+   dependency-free).
 State resets on reload, so it can never leave the player permanently hidden.
 `/spider off` remains the guaranteed fallback.
 
@@ -560,7 +569,10 @@ mouseover).
 ## 11. Conventions
 
 - Lua 5.0-compatible (see §2). No global pollution: all state under one `local SBeGone = {}`
-  namespace table (plus the SV table); files attach to it.
+  namespace table (plus the SV table); files attach to it. **Sanctioned extra
+  globals** (framework conventions, mirroring the working Spoken addon):
+  `SLASH_SPIDER1`/`SLASH_SPIDER2` (slash command registration) and the
+  binding command function if the panic key lands (§4.5).
 - No per-frame string concatenation outside debug mode.
 - Comments: `--` only, short; each file starts with a one-line purpose comment.
 - Git: `main` branch, conventional-ish lowercase commit messages, tag `v1.0.0`
@@ -771,17 +783,19 @@ M2 (skeleton + load) can start immediately — it needs none of R5's answers.
 ### 12.9 Probe round 6 (SBG6) — event availability map (2026-10-13)
 
 SBG5 showed `CHAT_COMMAND` is **not** a registerable event on this client,
-and `Bindings` is absent, so the panic-hotkey mechanism (§4.5) and any
-event-driven optimizations depend on which frame events exist at all. These
-probes pcall `RegisterEvent` (it *errors* on unknown events, so pcall is the
-test) and report true/false per event. Run both lines in order (line 2 needs
-the frame from line 1; re-run line 1 after `/reload`).
+and the Lua `Bindings` table is absent (this client does keybindings via
+XML `<Bindings>` files — see the Spoken addon's Bindings.xml), so the
+panic-hotkey mechanism (§4.5) and any event-driven optimizations depend on
+which frame events exist at all. These probes pcall `RegisterEvent` (it
+*errors* on unknown events, so pcall is the test) and report true/false per
+event. Run both lines in order (line 2 needs the frame from line 1; re-run
+line 1 after `/reload`).
 
 ```
-/run local p=SBG2.p; SBG2.f=CreateFrame("Frame"); for _,e in ipairs({"MOUSEOVER","UNIT_TARGET","UPDATE","PLAYER_ENTERING_WORLD","KEY_DOWN","KEY_UP"}) do local ok=pcall(SBG2.f.RegisterEvent,SBG2.f,e); p(e,ok) end end
+/run local p=SBG2.p; SBG2.f=CreateFrame("Frame"); for _,e in ipairs({"MOUSEOVER","UNIT_TARGET","UPDATE","PLAYER_ENTERING_WORLD","KEY_DOWN","KEY_UP"}) do local ok=pcall(SBG2.f.RegisterEvent,SBG2.f,e); p(e,ok) end
 ```
 ```
-/run local p=SBG2.p; for _,e in ipairs({"ZONE_CHANGED_NEW_AREA","PARTY_UPDATE","RAID_UPDATE","CHAT_COMMAND","ACTIONBAR_BUTTON_UP","VARIABLES_LOADED","UNIT_AURA","PLAYER_LOGIN"}) do local ok=pcall(SBG2.f.RegisterEvent,SBG2.f,e); p(e,ok) end end
+/run local p=SBG2.p; for _,e in ipairs({"ZONE_CHANGED_NEW_AREA","PARTY_UPDATE","RAID_UPDATE","CHAT_COMMAND","ACTIONBAR_BUTTON_UP","VARIABLES_LOADED","UNIT_AURA","PLAYER_LOGIN"}) do local ok=pcall(SBG2.f.RegisterEvent,SBG2.f,e); p(e,ok) end
 ```
 
 **Interpretation:**
