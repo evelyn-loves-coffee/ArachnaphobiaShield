@@ -61,6 +61,20 @@ Facts (verified from the local installation):
 `GetUnitFamily`, `IsPlayerUnit`, `GetNumAuras`, `GetUnitAura`, `GetScreenSize`,
 `C_Map.PositionToScreen`.
 
+**Wiki cross-check (2026-10-13):** the Warcraft Wiki maintains a per-client API
+comparison table (`World of Warcraft API/Classic`, current as of 2026-10-06)
+with an explicit **"Forever 1.60.1 (70235) Beta"** column. It confirms several
+position/camera/detection APIs exist in Forever that the in-client probes
+haven't tested yet: `UnitCreatureFamily` (returns family name + ID, **Spider =
+3**; "works on almost all Beasts"), `UnitCreatureID`, `UnitPosition` (works for
+player/party/raid only, z=0), `ClosestUnitPosition` (nearest creature by NPC
+ID — **starting zones only**), `GetUICameraInfo` (camera pos + lookAt per
+camera ID), `GetCameraZoom`, `GetCameraFOVDefaults`, `GetScreenWidth`/
+`GetScreenHeight`. **Implication:** in starting zones, spider world position
+(`UnitCreatureID` + `ClosestUnitPosition`) plus camera data could support a
+**manual world→screen projection** — i.e. the original 3D-follow cover may be
+recoverable for early zones. Probe §12.7 decides it.
+
 **Confirmed spider data (Tirisfal Glades):** "Young Night Web Spider", level 2,
 `UnitCreatureType` = **"Beast"** (not spider-specific) → detection must be
 **name-based** (name patterns + user `extraNames`), not family-based.
@@ -152,11 +166,19 @@ and `C_Map.PositionToScreen` both absent) and **no** unit-position API
   screen — "I don't want to see the middle of my screen right now"; toggled
   by slash and/or the panic hotkey.
 
-Detection is **name-based** (§2 confirmed facts): default patterns
-`{"Spider", "Gloomweaver"}` + user `extraNames`; `UnitCreatureType` ("Beast")
-is too broad to be a spider signal. If a future client build adds
-`C_Map.PositionToScreen` + a position API, the 3D-follow design re-activates as
-a drop-in extension (projection is isolated in Project.lua, §3.2).
+Detection: **`UnitCreatureFamily` first** if §12.7 shows it returns
+("Spider", 3) for wild spiders — else name patterns `{"Spider", "Gloomweaver"}`
++ user `extraNames` (`UnitCreatureType` = "Beast" is too broad to be a spider
+signal).
+
+**Option 0 — 3D hybrid (pending §12.7):** if the wiki-confirmed APIs behave as
+documented, starting-zone spiders get the *original* auto-follow cover:
+`UnitCreatureID(target)` → `ClosestUnitPosition(id)` → (x, y, dist) → manual
+perspective projection using `GetUICameraInfo`/`GetCameraZoom`/screen size.
+Calibration target: projecting **the player's own** `UnitPosition` must land
+bottom-center of the screen. Outside starting zones (or on failure), the
+UI-anchored set above is the fallback. The projection math is isolated in
+Project.lua so both paths coexist.
 
 **Owner decision pending (open Q5):** which combination ships in v1.0
 (recommendation: hover shield + parkable shields + blind mode + panic hotkey;
@@ -460,14 +482,16 @@ mouseover).
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
 | 1 | ~~Wrong `## Interface:` number~~ **RESOLVED**: 16001 confirmed (2026-10-13) | — | — | `GetBuildInfo()` 4th value; Spoken TOC cross-check |
-| 2 | ~~No world→screen projection~~ **CONFIRMED ABSENT** (with `GetUnitPosition` and `C_Map.PositionToScreen`) | — | Rescoped | Pivoted to UI-anchored covers (§3.0); 3D-follow re-activates only if a future build adds projection |
-| 3 | ~~`GetUnitFamily` absent~~ **CONFIRMED ABSENT**; `UnitCreatureType`="Beast" too broad | — | Resolved | Name-based detection: patterns `{"Spider","Gloomweaver"}` + user `extraNames` (§3.0) |
-| 4 | Cover undersized for large/flat spiders | Medium | Medium | sizeScale/minSize/maxSize/yOffset tuning; v1.1 wide rect + height table |
-| 5 | Can't cover non-token spiders (API boundary) | Certain | Medium | Documented limitation; target+mouseover cover the real pain points |
-| 6 | Proton/Wine path quirks | Low | Low | Standard folder copy into `Interface/AddOns/` (symlinked); test at M2 |
-| 7 | ~~"New content" spiders with unknown family strings~~ | — | Resolved | Name-based: `/spider add <name>`, selftest prints target **name** for discovery |
-| 8 | Name-based detection misses spiders without a matching name pattern | Medium | Medium | Defaults include "Spider"+"Gloomweaver"; user `extraNames`; config window shows tracked spider list; document how to add names |
-| 9 | Beta client API surface may still shift before out-of-beta release | Medium | Medium | All API use goes through a thin compat layer (Compat.lua) so one API swap = one-line change; re-run §12 probes on the release client |
+| 2 | ~~No world→screen projection~~ **CONFIRMED ABSENT** (`WorldFramePoint3D`, `C_Map.PositionToScreen`, `GetUnitPosition`) | — | Partially mitigated | Wiki shows Forever has `ClosestUnitPosition` (starting zones) + `GetUICameraInfo`/`GetCameraZoom` → **manual projection** path, probe §12.7; UI-anchored covers remain the guaranteed fallback (§3.0) |
+| 3 | Manual projection math/calibration may not match the actual classic camera model | Medium | Medium | Calibration probe: project player's own position, expect bottom-center; time-boxed — if it doesn't land within ~10% of expected, drop to UI-anchored only |
+| 4 | ~~`GetUnitFamily` absent~~ **CONFIRMED ABSENT**; `UnitCreatureType`="Beast" too broad | — | Resolved | Name-based detection: patterns `{"Spider","Gloomweaver"}` + user `extraNames` (§3.0) |
+| 5 | Cover undersized for large/flat spiders | Medium | Medium | sizeScale/minSize/maxSize/yOffset tuning; v1.1 wide rect + height table |
+| 6 | Can't cover non-token spiders (API boundary) | Certain | Medium | Documented limitation; target+mouseover cover the real pain points |
+| 7 | Proton/Wine path quirks | Low | Low | Standard folder copy into `Interface/AddOns/` (symlinked); test at M2 |
+| 8 | ~~"New content" spiders with unknown family strings~~ | — | Resolved | Name-based: `/spider add <name>`, selftest prints target **name** for discovery |
+| 9 | Name-based detection misses spiders without a matching name pattern | Medium | Medium | Defaults include "Spider"+"Gloomweaver"; user `extraNames`; config window shows tracked spider list; document how to add names |
+| 10 | Beta client API surface may still shift before out-of-beta release | Medium | Medium | All API use goes through a thin compat layer (Compat.lua) so one API swap = one-line change; re-run §12 probes on the release client; wiki comparison table (per-client columns) is the reference |
+| 11 | `ClosestUnitPosition` returns the nearest mob of that NPC ID, not necessarily the targeted one (same-species duplicates) | Medium | Low | Acceptable for a visual aid (targeted spider is almost always the nearest when engaged); document; detection stays on the tracked unit's own data |
 
 ## 10. Open questions
 
@@ -608,3 +632,49 @@ only if `SBG2` was cleared; then any order. R7 needs a spider targeted.
 /run local p=SBG2.p; p("C_UnitAura",C_UnitAura~=nil); p("C_UnitAura.Count",C_UnitAura and C_UnitAura.GetNumUnitAuras and "fn" or "no"); p("PlaySoundFile",PlaySoundFile~=nil); p("Bindings_table",type(Bindings)=="table")
 /run local p=SBG2.p; if C_UnitAura and C_UnitAura.GetNumUnitAuras then p("targetAuras",C_UnitAura.GetNumUnitAuras("target")) else p("targetAuras","API_MISSING") end
 ```
+
+### 12.7 Probe round 4 (SBG4) — wiki-confirmed position/camera chain (2026-10-13)
+
+Context: the Wiki's per-client API table (current 2026-10-06, explicit
+"Forever 1.60.1 (70235) Beta" column) lists these as **present in Forever**:
+`UnitCreatureFamily` (family name+ID, Spider=3), `UnitCreatureID`,
+`UnitPosition` (player/party/raid only), `ClosestUnitPosition` (nearest
+creature by NPC ID — starting zones only), `GetUICameraInfo`,
+`GetCameraZoom`, `GetCameraFOVDefaults`, `GetScreenWidth`/`GetScreenHeight`.
+If the chain works, starting-zone spiders get true 3D-follow covers via manual
+projection.
+
+**Run with a spider TARGETED while standing in a starting zone**
+(Tirisfal Glades qualifies). R1–R2: spider targeted. R3: no target needed.
+R4: spider targeted (re-target if it died). R5–R8: no target needed.
+Re-run R1 (`SBG2` helper) only if it was cleared.
+
+```
+/run local p=SBG2.p; p("UnitCreatureFamily",UnitCreatureFamily~=nil); if UnitCreatureFamily then local n,id=UnitCreatureFamily("target"); p("fam",tostring(n).." id="..tostring(id)) end
+/run local p=SBG2.p; p("UnitCreatureID",UnitCreatureID~=nil); if UnitCreatureID then p("crid",tostring(UnitCreatureID("target"))) end
+/run local p=SBG2.p; p("UnitPosition",UnitPosition~=nil); if UnitPosition then local x,y,z,m=UnitPosition("player"); p("playerPos",tostring(x)..","..tostring(y).." z="..tostring(z).." map="..tostring(m)) end
+/run local p=SBG2.p; p("ClosestUnitPosition",ClosestUnitPosition~=nil); if UnitCreatureID and ClosestUnitPosition then local x,y,d=ClosestUnitPosition(UnitCreatureID("target")); p("closest",tostring(x)..","..tostring(y).." dist="..tostring(d)) end
+/run local p=SBG2.p; p("GetUICameraInfo",GetUICameraInfo~=nil); p("GetCameraZoom",GetCameraZoom~=nil); if GetCameraZoom then p("zoom",tostring(GetCameraZoom())) end
+/run local p=SBG2.p; p("GetCameraFOVDefaults",GetCameraFOVDefaults~=nil); if GetCameraFOVDefaults then local a,b,c=GetCameraFOVDefaults(); p("fovDef",tostring(a).."|"..tostring(b).."|"..tostring(c)) end
+/run local p=SBG2.p; if GetUICameraInfo then for i=1,5 do local ok,px,py,pz,lx,ly,lz=pcall(GetUICameraInfo,i); p("cam"..i,ok and (tostring(px)..","..tostring(py)..","..tostring(pz)) or "nil") end
+/run local p=SBG2.p; local W,H; if GetEffectiveScreenInfo then W,H=GetEffectiveScreenInfo() elseif GetScreenWidth then W,H=GetScreenWidth(),GetScreenHeight() end; p("WH",tostring(W).."x"..tostring(H))
+```
+
+**Interpretation:**
+- R1 `fam: Spider id=3` (or any `id=3`) → **family-based detection works**
+  (primary detection path restored; name patterns stay as fallback).
+  `fam: nil` → name-based only.
+- R2 `crid: <number>` → needed for R4.
+- R3 `playerPos: x,y z=0 map=<id>` → player world position baseline.
+- R4 `closest: x,y dist=d` → spider position candidate. If (x,y) is within
+  ~`d` of playerPos (same coordinate frame) the chain is geometrically sane.
+  `nil` → not a starting zone (or API restriction) → 3D path unavailable
+  there.
+- R5 `zoom`, R6 `fovDef`, R8 `WH` → projection parameters.
+- R7 `cam1..cam5` → find the camera ID whose position is near the player
+  (world camera). That ID is the projection input.
+
+Calibration (offline, done by maintainer with R3+R7+R8 numbers): project the
+**player's own position** through the manual perspective transform; it must
+land at bottom-center of the screen (±~10%). If it does, 3D-follow is on for
+starting zones; if not, UI-anchored covers only (time-box per risk 3).
