@@ -49,16 +49,9 @@ function SBeGone.Selftest()
 end
 
 -- ------------------------------------------------------- slash commands
--- Route 1 (modern): SlashCmdList entry. Route 2: CHAT_COMMAND event.
--- Both funnel into SBeGone.Selftest; the 0.25s dedupe keeps output clean
--- whichever route(s) this client actually uses.
-SlashCmdList.SBeGone = SBeGone.Selftest
-
-local cmdFrame = CreateFrame("Frame")
-cmdFrame:RegisterEvent("CHAT_COMMAND")
-cmdFrame:SetScript("OnEvent", function(self, event, arg)
-	local cmd = string.match(arg or "", "^%s*(%S+)")
-	if cmd == "spider" or cmd == "spidergone" then
-		SBeGone.Selftest()
-	end
-end)
+-- This client dispatches slash commands by looking the command NAME up in
+-- SlashCmdList (no CHAT_COMMAND event exists on this build — RegisterEvent
+-- rejects it; confirmed 2026-10-13). The handler receives the rest of the
+-- line as its argument.
+SlashCmdList["spider"] = SBeGone.Selftest
+SlashCmdList["spidergone"] = SBeGone.Selftest

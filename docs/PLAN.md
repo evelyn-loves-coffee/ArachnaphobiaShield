@@ -94,20 +94,33 @@ only), **`ClosestUnitPosition(1504)` → nil in a starting zone** (dead),
 `GetUICameraInfo` present (probe had a syntax error — moot now),
 `GetEffectiveScreenInfo` ✓ (1772×1181 at UI scale). **3D path closed.**
 
+**SBG5 results (2026-10-13, warrior in Tirisfal Glades, mouse over a spider):**
+`GetCursorPosition` ✓ (206,409), `UnitClass` ✓ ("Warrior"),
+`UnitFactionGroup` ✓ ("Horde"), `PlaySoundFile` ✓, `mouseover` token ✓
+("Young Night Web Spider", ("Spider",3), visible, `UnitIsDead` tracks death
+state), frame globals `TargetFrame` ✓ / `FocusFrame` ✓ / `UIParent` ✓ but
+`MouseOverInfoFrame` ✗ / `PartyFrame1` ✗ / `MainMenuBar` ✗. **`CHAT_COMMAND`
+is not a registerable event on this client** (RegisterEvent rejects it) —
+slash dispatch is a direct name-keyed `SlashCmdList[name]` lookup (handler
+receives the rest of the line; the client's unknown-command fallback
+"Type /help..." confirmed the lookup path). **`Bindings` table absent** (§4.5
+hotkey needs the `KEY_DOWN`-event or polling fallback — probe §12.9).
+**`UnitCanAttack` is two-arg on this client**: `UnitCanAttack(unit, target)`.
+
 APIs the plan relies on (**confirmed** 2026-10-13 unless noted):
 
 | API | Use | Status |
 |---|---|---|
 | `UnitName` / `GetUnitName` (both present) | identity, name-based detection | ✓ |
 | `UnitLevel` | label, size heuristic | ✓ |
-| `UnitIsVisible`, `UnitIsDead`, `UnitCanAttack` | tracking/detection guards | ✓ |
+| `UnitIsVisible`, `UnitIsDead`, `UnitCanAttack(unit, target)` (two-arg!) | tracking/detection guards | ✓ |
 | `UnitCreatureType` | sanity only (spiders report **"Beast"**) | ✓ |
 | `C_Timer` | timers | ✓ |
-| `SlashCmdList` + `CHAT_COMMAND` | slash commands | ✓ |
+| `SlashCmdList` (name-keyed lookup; **no CHAT_COMMAND event**) | slash commands | ✓ (SBG5) |
 | `GetBuildInfo()` → 4 **strings** (4th = interface no.) | interface check | ✓ |
-| `GetCursorPosition` | hover-shield anchor | probe §12.6 |
-| `GetEffectiveScreenInfo` | screen size (replaces absent `GetScreenSize`) | probe §12.6 |
-| `UnitClass` / `UnitFactionGroup` | "is a player?" (replaces absent `IsPlayerUnit`) | probe §12.6 |
+| `GetCursorPosition` | hover-shield anchor | ✓ (SBG5) |
+| `GetEffectiveScreenInfo` | screen size (replaces absent `GetScreenSize`) | ✓ (SBG4) |
+| `UnitClass` / `UnitFactionGroup` | "is a player?" (replaces absent `IsPlayerUnit`) | ✓ (SBG5) |
 | `CreateFrame`, `SetPoint`, `SetSize`, `SetTexture`, `SetFrameStrata`, `SetClampRect`, `CheckBox`, `Slider`, `EditBox`, `SetBackdrop`, `PlaySoundFile` | UI | assumed ✓, spot-check §12.6 |
 | `SavedVariables` in `.toc` | persistence | ✓ |
 
@@ -164,15 +177,24 @@ and `C_Map.PositionToScreen` both absent) and **no** unit-position API
 **infeasible on this build**. The pivot keeps the owner's hard constraint
 (UI-layer only, no model swaps) and covers what the API *can* see:
 
-- **Hover shield (auto):** while `mouseover` (or `target`/`focus`) resolves to
-  a spider, a cover disc renders at the **cursor** (hover) — the spider is
-  hidden while you point at / interact with it.
-- **Frame cover (auto):** when a tracked unit (target/focus/party/raid) is a
-  spider, its unit frame (`TargetFrame`, `FocusFrame`, party frames) is
-  covered by a tinted plate — hides the spider's name/health UI.
-- **Parkable shields (manual):** up to 8 pre-created, **draggable** cover discs
+- **Sticky hover shield (auto — owner requirement: cover *all* spiders, not
+  just while-hovered, 2026-10-13):** while `mouseover` resolves to a spider,
+  a cover disc renders at the **cursor**; when the mouse leaves, the cover
+  **sticks** at that screen position (`settings.stickyCovers`, default **on**)
+  until cleared — sweep the mouse across the screen and every spider you
+  point at is covered and *stays* covered. Stuck covers join the shared 24-slot
+  frame pool (FIFO: a new one evicts the oldest when full). `stickyCovers =
+  off` restores while-hovered-only behavior. `/spider clear` and the panic
+  key remove all.
+- **Frame cover (auto):** when `target`/`focus` is a spider, a tinted plate
+  covers that unit frame (`TargetFrame`/`FocusFrame` — both exist; **target
+  and focus only**: SBG5 found no `PartyFrame1`/`MainMenuBar` globals on this
+  client, so party-frame covers are out of scope) — hides the spider's
+  name/health UI.
+- **Parkable shields (manual):** up to 8 pre-parked, **draggable** cover discs
   parented to `UIParent` — drag one over a spider, or pre-park them; positions
-  persist per profile; panic hotkey hides all (§4.5).
+  persist per character (SavedVariables); panic key / `/spider clear` hides
+  all (§4.5). Parkable shields and stuck hover covers share the 24-slot pool.
 - **Blind mode (auto/manual):** one large soft cover over the center of the
   screen — "I don't want to see the middle of my screen right now"; toggled
   by slash and/or the panic hotkey.
@@ -206,8 +228,9 @@ frame cover is a cheap extra).
      (default `{"Spider", "Gloomweaver"}`) or is in `settings.extraNames`
      — fallback for units returning no family / new content;
   4. level window `settings.minLevel..settings.maxLevel`;
-  5. if `settings.requireHostile` and **not** `UnitCanAttack(unit, "player")`
-     → false.
+  5. if `settings.requireHostile` and **not** `UnitCanAttack("player", unit)`
+     → false. (Two-arg form: `UnitCanAttack(unit, target)` — confirmed by
+     SBG5's usage error.)
 
 - Tracked list is rebuilt on events (`UNIT_TARGET`, `UNIT_PET`, `PARTY_UPDATE`,
   `RAID_UPDATE`, `PLAYER_ENTERING_WORLD`), not per frame.
@@ -362,17 +385,19 @@ take effect next frame.
 ### 4.5 Panic hotkey (v1.1 candidate — owner decision pending)
 
 A keybind that instantly hides **all** covers (press again to restore), no chat
-needed — for when a cover occludes something the player must see. Classic (1.x)
-binding mechanism:
+needed — for when a cover occludes something the player must see.
 
-- TOC: `## BindingName: SBeGoneBindingName`
-- Lua: `SBeGoneBindingName = { SBG_HIDE_COVERS = "Show/Hide all covers" }` plus a
-  global `SBeGoneBindingCommand(key, isDown)` that toggles a session-level
-  `hidden` flag (the driver skips all placement while set).
-- Default **unbound** (F1/F2 are vanilla default action keys); F12 suggested.
-  State resets on reload, so it can never leave the player permanently hidden.
-
-Exact TOC field name to be confirmed against this client's UI conventions at M1.
+**Mechanism (updated 2026-10-13, SBG5):** the `Bindings` table is **absent**
+on this client, so the classic `## BindingName:` TOC mechanism is dead.
+Fallback plan, in order:
+1. `KEY_DOWN` frame event (availability: probe §12.9 / SBG6): a driver frame
+   registers `KEY_DOWN` and matches the bound key name (default **F12**; F1/F2
+   are vanilla action keys), toggling a session-level `hidden` flag (driver
+   skips all placement while set).
+2. If `KEY_DOWN` is also absent: modifier-key polling in the existing OnUpdate
+   (crude but dependency-free; only if (1) fails).
+State resets on reload, so it can never leave the player permanently hidden.
+`/spider off` remains the guaranteed fallback.
 
 ## 5. Performance budget (details in §8 PAWS)
 
@@ -742,3 +767,29 @@ while R4 runs too). R1, R2, R5, R6: no hover needed. Re-run the `SBG2` helper
 
 After this round every API the design depends on is in-client verified, and
 M2 (skeleton + load) can start immediately — it needs none of R5's answers.
+
+### 12.9 Probe round 6 (SBG6) — event availability map (2026-10-13)
+
+SBG5 showed `CHAT_COMMAND` is **not** a registerable event on this client,
+and `Bindings` is absent, so the panic-hotkey mechanism (§4.5) and any
+event-driven optimizations depend on which frame events exist at all. These
+probes pcall `RegisterEvent` (it *errors* on unknown events, so pcall is the
+test) and report true/false per event. Run both lines in order (line 2 needs
+the frame from line 1; re-run line 1 after `/reload`).
+
+```
+/run local p=SBG2.p; SBG2.f=CreateFrame("Frame"); for _,e in ipairs({"MOUSEOVER","UNIT_TARGET","UPDATE","PLAYER_ENTERING_WORLD","KEY_DOWN","KEY_UP"}) do local ok=pcall(SBG2.f.RegisterEvent,SBG2.f,e); p(e,ok) end end
+```
+```
+/run local p=SBG2.p; for _,e in ipairs({"ZONE_CHANGED_NEW_AREA","PARTY_UPDATE","RAID_UPDATE","CHAT_COMMAND","ACTIONBAR_BUTTON_UP","VARIABLES_LOADED","UNIT_AURA","PLAYER_LOGIN"}) do local ok=pcall(SBG2.f.RegisterEvent,SBG2.f,e); p(e,ok) end end
+```
+
+**Interpretation:**
+- `KEY_DOWN: true` → panic hotkey via event (mechanism 1, §4.5).
+- `MOUSEOVER: true` → hover shield can be event-driven (polling stays as
+  fallback).
+- `PLAYER_ENTERING_WORLD: true` → proper init/lifecycle point.
+- Anything `true` is an optimization; the design's primary refresh remains
+  OnUpdate polling (PLAN.md §3.4). The frames left registered on `SBG2.f`
+  are harmless (no OnEvent scripts) but `/reload` (or re-running line 1) keeps
+  things clean.

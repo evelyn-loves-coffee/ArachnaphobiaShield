@@ -29,16 +29,25 @@ z=0, map=0), `C_Timer`, `C_Map` (partial — no `PositionToScreen`),
 `GetCameraFOVDefaults`, `GetUICameraInfo` (call untested — probe had a syntax
 error, irrelevant now).
 
-Wiki-table-only (not yet probed in-client; expected per 2026-10-06 table):
-`GetCursorPosition`, `UnitClass`, `UnitFactionGroup`, `UnitIsUnit`,
-`GetScreenWidth`/`GetScreenHeight`, `PlaySoundFile`, `GetPhysicalScreenSize`.
-→ Probe round SBG5 (PLAN.md §12.8) covers these.
+Confirmed in-client 2026-10-13 (SBG5): `GetCursorPosition` (returned
+206,409), `UnitClass` (→ "Warrior"), `UnitFactionGroup` (→ "Horde"),
+`PlaySoundFile`, the **`mouseover` unit token** end-to-end ("Young Night
+Web Spider", family ("Spider",3), `UnitIsVisible` true, `UnitIsDead` tracks
+dead state), frame globals `TargetFrame`, `FocusFrame`, `UIParent`.
+
+Wiki-table-only, still unprobed: `GetScreenWidth`/`GetScreenHeight`,
+`GetPhysicalScreenSize`, `UnitIsUnit`.
 
 ## Confirmed ABSENT (in-client, this build)
 
 `WorldFramePoint3D`, `GetUnitPosition`, `GetUnitFamily`, `IsPlayerUnit`,
 `GetNumAuras`, `GetUnitAura`, `GetScreenSize`, `C_Map.PositionToScreen`,
-`GetUnitWorldPosition`, `GetCameraPosition` (global), `GetViewingInfo`.
+`GetUnitWorldPosition`, `GetCameraPosition` (global), `GetViewingInfo`,
+the **`CHAT_COMMAND` event** (RegisterEvent rejects it — slash dispatch is a
+direct `SlashCmdList[name]` lookup instead), the **`Bindings` table**, and
+default-UI globals `MouseOverInfoFrame`, `PartyFrame1`, `MainMenuBar` (so:
+no party-frame covers; screen placement uses `UIParent` +
+`GetEffectiveScreenInfo`).
 
 ## Confirmed DEAD ENDS (tested)
 
@@ -61,11 +70,20 @@ Wiki-table-only (not yet probed in-client; expected per 2026-10-06 table):
 1. Detection: `select(2, UnitCreatureFamily(unit)) == 3` primary; name
    patterns `{"Spider","Gloomweaver"}` + user `extraNames` fallback.
 2. No spider world position → no projection → covers are UI-anchored:
-   hover shield (cursor), parkable shields (draggable), blind mode, frame
-   cover.
+   **sticky hover shield** (user requirement: cover *all* spiders, not just
+   while-hovered — PLAN.md §3.0), parkable shields, blind mode, frame cover
+   (target/focus only — no party-frame globals on this client).
 3. Player detection: `UnitClass(unit) ~= nil` (replaces absent
    `IsPlayerUnit`).
 4. Lua 5.1: never use `//`, `goto`, `table.pack`, bitwise ops.
-5. Slash commands: `SlashCmdList` + `CHAT_COMMAND` (classic `SLASH_` vars not
-   relied on). Events themselves remain unconfirmed in-client → `OnUpdate`
-   polling is the primary refresh mechanism (PLAN.md §3.4).
+5. Slash commands: `SlashCmdList["spider"] = handler` (name-keyed lookup;
+   handler receives the rest of the line). No `CHAT_COMMAND` event on this
+   build. Classic `SLASH_` vars not relied on.
+6. **`UnitCanAttack` is two-arg on this client**: `UnitCanAttack(unit,
+   target)` — use `UnitCanAttack("player", unit)` for "hostile to me".
+7. Events in general remain largely unconfirmed (only known-absent:
+   `CHAT_COMMAND`) → `OnUpdate` polling is the primary refresh mechanism
+   (PLAN.md §3.4). Event availability probe: SBG6 (PLAN.md §12.9).
+8. Panic hotkey: `Bindings` table absent → mechanism must be a `KEY_DOWN`
+   frame event (availability in SBG6) or modifier-key polling; decision
+   pending SBG6 (PLAN.md §4.5).
