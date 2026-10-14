@@ -75,13 +75,24 @@ camera ID), `GetCameraZoom`, `GetCameraFOVDefaults`, `GetScreenWidth`/
 **manual world→screen projection** — i.e. the original 3D-follow cover may be
 recoverable for early zones. Probe §12.7 decides it.
 
-**Confirmed spider data (Tirisfal Glades):** "Young Night Web Spider", level 2,
-`UnitCreatureType` = **"Beast"** (not spider-specific) → detection must be
-**name-based** (name patterns + user `extraNames`), not family-based.
+**Confirmed spider data (Tirisfal Glades):** "Young Night Web Spider", level
+2, NPC ID **1504**, `UnitCreatureType` = "Beast" (too broad), **
+`UnitCreatureFamily` = ("Spider", 3)** ✓ — family-based detection **works on
+wild spiders** (wiki: "works on almost all Beasts"). Primary detection:
+`select(2, UnitCreatureFamily(unit)) == 3`; name patterns + `extraNames` as
+fallback for units returning no family.
 
-**Design consequence:** no world→screen projection **and** no unit-position API
-exist on this client → the original 3D-follow cover is **infeasible** here.
-Pivoted to UI-anchored covers (§3.0).
+**Design consequence:** no world→screen projection **and** no usable
+unit-position API exist on this client → the 3D-follow cover is **infeasible**
+here. Pivoted to UI-anchored covers (§3.0).
+
+**SBG4 results (2026-10-13, spider targeted in Tirisfal Glades):**
+`UnitCreatureFamily` ✓ ("Spider", 3), `UnitCreatureID` ✓ (1504),
+`UnitPosition("player")` ✓ (2070.9, 1694.3, z=0, map=0 — player/party/raid
+only), **`ClosestUnitPosition(1504)` → nil in a starting zone** (dead),
+`GetCameraZoom` ✓ (30), `GetCameraFOVDefaults` ✓ (90/50/90),
+`GetUICameraInfo` present (probe had a syntax error — moot now),
+`GetEffectiveScreenInfo` ✓ (1772×1181 at UI scale). **3D path closed.**
 
 APIs the plan relies on (**confirmed** 2026-10-13 unless noted):
 
@@ -166,19 +177,16 @@ and `C_Map.PositionToScreen` both absent) and **no** unit-position API
   screen — "I don't want to see the middle of my screen right now"; toggled
   by slash and/or the panic hotkey.
 
-Detection: **`UnitCreatureFamily` first** if §12.7 shows it returns
-("Spider", 3) for wild spiders — else name patterns `{"Spider", "Gloomweaver"}`
-+ user `extraNames` (`UnitCreatureType` = "Beast" is too broad to be a spider
-signal).
+**Detection (final):** `select(2, UnitCreatureFamily(unit)) == 3` ("Spider")
+as the primary signal — **confirmed working on a wild spider** (SBG4). Fallback
+name patterns `{"Spider", "Gloomweaver"}` + user `extraNames` for units that
+return no family (wiki: family "does not work on all creatures").
 
-**Option 0 — 3D hybrid (pending §12.7):** if the wiki-confirmed APIs behave as
-documented, starting-zone spiders get the *original* auto-follow cover:
-`UnitCreatureID(target)` → `ClosestUnitPosition(id)` → (x, y, dist) → manual
-perspective projection using `GetUICameraInfo`/`GetCameraZoom`/screen size.
-Calibration target: projecting **the player's own** `UnitPosition` must land
-bottom-center of the screen. Outside starting zones (or on failure), the
-UI-anchored set above is the fallback. The projection math is isolated in
-Project.lua so both paths coexist.
+**~~Option 0 — 3D hybrid~~ CLOSED (2026-10-13):** `ClosestUnitPosition`
+returned nil for NPC 1504 while standing in Tirisfal Glades (a starting zone)
+— the "starting zones only" gate rejects it where spiders actually live. No
+other API yields a target spider's world position, so 3D-follow is out. If a
+future build fixes/extends it, Project.lua keeps a seam for re-activation.
 
 **Owner decision pending (open Q5):** which combination ships in v1.0
 (recommendation: hover shield + parkable shields + blind mode + panic hotkey;
@@ -189,22 +197,32 @@ frame cover is a cheap extra).
 - The **tracked set** = union of enabled groups → list of unit tokens (≤ 24).
 - **Spider predicate** (single, DRY, used for every unit):
 
-  1. `IsPlayerUnit(unit)` → false (never cover players);
-  2. `GetUnitFamily(unit) == "Spider"` **or** family ∈ `settings.families`;
-  3. OR `UnitCreatureType(unit)` ∈ `settings.families` (fallback if family API
-     is absent on this build);
-  4. OR `UnitName(unit)` ∈ `settings.extraNames` (data-driven escape hatch for
-     the new content's spiders whose family string we haven't confirmed);
-  5. level window `settings.minLevel..settings.maxLevel`;
-  6. if `settings.requireHostile` and `UnitCanAttack(unit, "player")` → false.
+  1. `UnitClass(unit) ~= nil` → false (never cover players — `IsPlayerUnit`
+     is absent; `UnitClass`/`UnitFactionGroup` confirmed in the wiki table,
+     in-client probe §12.8);
+  2. `select(2, UnitCreatureFamily(unit)) == 3` — "Spider" family;
+     **confirmed working on a wild spider** (SBG4: "Spider", id 3);
+  3. OR `UnitName(unit)` matches `settings.namePatterns`
+     (default `{"Spider", "Gloomweaver"}`) or is in `settings.extraNames`
+     — fallback for units returning no family / new content;
+  4. level window `settings.minLevel..settings.maxLevel`;
+  5. if `settings.requireHostile` and **not** `UnitCanAttack(unit, "player")`
+     → false.
 
 - Tracked list is rebuilt on events (`UNIT_TARGET`, `UNIT_PET`, `PARTY_UPDATE`,
   `RAID_UPDATE`, `PLAYER_ENTERING_WORLD`), not per frame.
 
-### 3.2 Projection (Project.lua) — pure functions, no frame state
+### 3.2 Projection (Project.lua) — **CLOSED on this build, seam kept** (SBG4)
 
-For a unit at world position `(wx, wy, wz)` (from `GetUnitPosition`, foot
-anchor):
+> **Status (2026-10-13):** the APIs this section assumed (`GetUnitPosition`,
+> `WorldFramePoint3D`) are absent, and `ClosestUnitPosition` (the only
+> candidate position source) returned nil in a starting zone (§2, SBG4).
+> The math below is kept as the **re-activation seam**: if a future client
+> build exposes a unit-position + camera API, Project.lua implements exactly
+> this. v1.0 anchors are UI-space only (§3.0).
+
+For a unit at world position `(wx, wy, wz)` (foot anchor, from whichever
+position API a future build provides):
 
 1. `sx, sy, behind = WorldFramePoint3D(wx, wy, wz)` — foot in screen space
    (UIParent coordinates, origin bottom-left).
@@ -242,9 +260,16 @@ This two-point projection gives correct perspective scaling for free.
 
 ### 3.4 Lifecycle
 
-- All `.lua` files run at client load (character-select time). No `ADDON_LOADED`
-  in 1.x: initialize structures at file load, arm the driver on
-  `PLAYER_ENTERING_WORLD`, reset all covers on logout events.
+- Modern codebase (confirmed): all `.lua` files run at client load
+  (character-select time). Initialize structures at file load, arm the driver
+  on `PLAYER_ENTERING_WORLD`, reset all covers on logout events.
+- **Events are unconfirmed** on this client (wiki table tracks functions only,
+  not events). Design decision: **`OnUpdate` polling is the primary refresh
+  mechanism** (re-scan the tracked token list every ~200 ms — 5 calls per
+  token, trivial cost); registered events (`MOUSEOVER`, `UNIT_TARGET`,
+  `PARTY_UPDATE`, `RAID_UPDATE`, …) are pure optimizations, registered
+  best-effort (a missing event name is a silent no-op, so nothing breaks).
+  Classic-only event names (e.g. `UPDATE_AURAS`) are **not** used.
 - Guarded init (idempotent), `settings.enabled` gate checked per frame (cheap).
 - `/reload` safe: everything rebuilds from `SavedVariables` + defaults.
 
@@ -483,8 +508,8 @@ mouseover).
 |---|---|---|---|---|
 | 1 | ~~Wrong `## Interface:` number~~ **RESOLVED**: 16001 confirmed (2026-10-13) | — | — | `GetBuildInfo()` 4th value; Spoken TOC cross-check |
 | 2 | ~~No world→screen projection~~ **CONFIRMED ABSENT** (`WorldFramePoint3D`, `C_Map.PositionToScreen`, `GetUnitPosition`) | — | Partially mitigated | Wiki shows Forever has `ClosestUnitPosition` (starting zones) + `GetUICameraInfo`/`GetCameraZoom` → **manual projection** path, probe §12.7; UI-anchored covers remain the guaranteed fallback (§3.0) |
-| 3 | Manual projection math/calibration may not match the actual classic camera model | Medium | Medium | Calibration probe: project player's own position, expect bottom-center; time-boxed — if it doesn't land within ~10% of expected, drop to UI-anchored only |
-| 4 | ~~`GetUnitFamily` absent~~ **CONFIRMED ABSENT**; `UnitCreatureType`="Beast" too broad | — | Resolved | Name-based detection: patterns `{"Spider","Gloomweaver"}` + user `extraNames` (§3.0) |
+| 3 | ~~Manual projection math/calibration~~ **CLOSED (2026-10-13)**: `ClosestUnitPosition` → nil in starting zone (Tirisfal); no spider position obtainable | — | — | UI-anchored design is final; Project.lua seam kept for a future client that exposes spider positions |
+| 4 | ~~`GetUnitFamily` absent~~ **CONFIRMED ABSENT**; `UnitCreatureType`="Beast" too broad | — | Resolved better | **`UnitCreatureFamily` confirmed working** ("Spider", id 3, SBG4) — primary detection; name patterns + `extraNames` as fallback (§3.0) |
 | 5 | Cover undersized for large/flat spiders | Medium | Medium | sizeScale/minSize/maxSize/yOffset tuning; v1.1 wide rect + height table |
 | 6 | Can't cover non-token spiders (API boundary) | Certain | Medium | Documented limitation; target+mouseover cover the real pain points |
 | 7 | Proton/Wine path quirks | Low | Low | Standard folder copy into `Interface/AddOns/` (symlinked); test at M2 |
@@ -501,9 +526,10 @@ mouseover).
 3. ~~Icon~~ — resolved: original generated 32x32 "no spider" icon (`icon.tga`).
 4. Panic hotkey — owner decision pending (mechanism documented in §4.5).
 5. **Pivot feature set (2026-10-13, §3.0):** 3D-follow is infeasible on this
-   client. Owner to pick v1.0 scope among: hover shield (auto), frame cover
-   (auto), parkable shields (manual), blind mode. Recommendation: hover +
-   parkable + blind + panic hotkey; frame cover optional.
+   client (SBG4 closed the 3D path). Owner to pick v1.0 scope among: hover
+   shield (auto), frame cover (auto), parkable shields (manual), blind mode.
+   Recommendation: hover + parkable + blind + panic hotkey; frame cover
+   optional. **Defaulting to the recommendation unless owner objects.**
 
 ## 11. Conventions
 
@@ -678,3 +704,40 @@ Calibration (offline, done by maintainer with R3+R7+R8 numbers): project the
 **player's own position** through the manual perspective transform; it must
 land at bottom-center of the screen (±~10%). If it does, 3D-follow is on for
 starting zones; if not, UI-anchored covers only (time-box per risk 3).
+
+### 12.8 Probe round 5 (SBG5) — UI-anchored design building blocks (2026-10-13)
+
+The 3D path is closed (SBG4). The final probe round confirms the building
+blocks of the UI-anchored design (§3.0): cursor position, the `mouseover`
+token (hover-shield trigger + detection through it), unit frames, player
+detection, sound, `Bindings`.
+
+**R3: hover the mouse over a spider before running it** (and keep it hovering
+while R4 runs too). R1, R2, R5, R6: no hover needed. Re-run the `SBG2` helper
+(A1) only if it was cleared.
+
+```
+/run local p=SBG2.p; p("GetCursorPosition",GetCursorPosition~=nil); if GetCursorPosition then local x,y=GetCursorPosition(); p("cursor",tostring(x)..","..tostring(y)) end
+/run local p=SBG2.p; p("playerClass",UnitClass and tostring(UnitClass("player")) or "MISSING"); p("playerFaction",UnitFactionGroup and tostring(UnitFactionGroup("player")) or "MISSING")
+/run local p=SBG2.p; p("mouseover",tostring(UnitName("mouseover"))); if UnitCreatureFamily then local n,id=UnitCreatureFamily("mouseover"); p("hover_fam",tostring(n).." id="..tostring(id)) end
+/run local p=SBG2.p; p("mouseover_visible",tostring(UnitIsVisible("mouseover"))); p("mouseover_canattack",tostring(UnitCanAttack("mouseover")))
+/run local p=SBG2.p; p("TargetFrame",TargetFrame~=nil); p("FocusFrame",FocusFrame~=nil); p("MouseOverInfoFrame",MouseOverInfoFrame~=nil); p("PartyFrame1",PartyFrame1~=nil); p("MainMenuBar",MainMenuBar~=nil); p("UIParent",UIParent~=nil)
+/run local p=SBG2.p; p("PlaySoundFile",PlaySoundFile~=nil); p("Bindings",type(Bindings)=="table"); p("UnitIsDead_mouseover",tostring(UnitIsDead("mouseover")))
+```
+
+**Interpretation:**
+- R1 `cursor: x,y` → `GetCursorPosition` works; numbers should be within the
+  `WH` range from SBG4 (1772×1181).
+- R2 `playerClass: <class> playerFaction: <Alliance|Horde>` → player-detection
+  replacement for the absent `IsPlayerUnit`.
+- R3 (mouse on a spider) `mouseover: <spider name> hover_fam: Spider id=3` →
+  the hover shield's trigger + detection both work end-to-end. `mouseover:
+  nil` = mouse wasn't over a unit when run.
+- R4 `mouseover_visible: true mouseover_canattack: true/false` → guard APIs
+  accept the `mouseover` token.
+- R5 frame globals → where frame covers anchor.
+- R6 `PlaySoundFile: true` → config-window sounds; `Bindings: true` → hotkey
+  plumbing available.
+
+After this round every API the design depends on is in-client verified, and
+M2 (skeleton + load) can start immediately — it needs none of R5's answers.
