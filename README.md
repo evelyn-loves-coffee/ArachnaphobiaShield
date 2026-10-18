@@ -122,6 +122,13 @@ troubleshooting table: [docs/COVER-IMAGES.md](docs/COVER-IMAGES.md).
 - Deaths not observed through accessible unit data can be missed by the
   look-away warning.
 
+## AI disclosure
+
+The majority of the code in this addon was written by open-weight AI
+models running entirely on local hardware; a very small amount of
+coding was assisted by cloud-based AI API services. The maintainer
+directed and reviewed the work throughout development.
+
 ## Credits and data
 
 Arachnophobia Shield is an independent **spiritual successor to the
