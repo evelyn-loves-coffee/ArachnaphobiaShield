@@ -17,7 +17,7 @@ Client facts (docs/PLAN.md §2, verified in-client 2026-10-13):
 ]]
 
 ArachnaphobiaShield = ArachnaphobiaShield or {}
-ArachnaphobiaShield.version = "0.4.7"
+ArachnaphobiaShield.version = "0.4.8"
 local A = ArachnaphobiaShield.Access
 
 ArachnaphobiaShield.hidden = nil  -- panic-hide seam (M4); true hides every cover
@@ -59,8 +59,9 @@ local DEFAULTS = {
 	maxLevel = 99,
 	-- Native nameplate tracking is the only detection mode.
 	trackScale = 1.0,   -- cover local size = plate local width x this
-	-- v0.4.0: /as grow is a PERCENTAGE (100 = default 1.0, allowed 80-120);
-	-- the stored value stays a multiplier (0.8-1.2).
+	-- v0.4.0: /as scale (renamed from /as grow in v0.4.8) is a PERCENTAGE
+	-- (100 = default 1.0, allowed 80-120); the stored value stays a
+	-- multiplier (0.8-1.2).
 	-- drop: centre the cover this many cover-heights below the plate.
 	-- Calibrated in game 2026-10-16 (owner screenshot, Tirisfal, Young Night
 	-- Web Spider): at 0.9 the model sat above the cover's top edge; at 0.5
@@ -192,23 +193,24 @@ function ArachnaphobiaShield.Slash(msg)
 		ArachnaphobiaShield.Slash(ArachnaphobiaShieldSettings.enabled and "disable" or "enable")
 	elseif first == "reset" then
 		ArachnaphobiaShield.Reset()
-	elseif first == "grow" then
-		-- v0.4.0: cover size as a PERCENTAGE of the plate width. 100 = the
-		-- default; allowed 80-120. Stored as a multiplier (0.8-1.2).
+	elseif first == "scale" then
+		-- v0.4.0: cover size as a PERCENTAGE of the plate width (the command
+		-- was /as grow until v0.4.8). 100 = the default; allowed 80-120.
+		-- Stored as a multiplier (0.8-1.2).
 		local v = tonumber(string.match(msg or "", "^%s*%S+%s+(%S+)"))
 		if not v then
 			local cur = (type(ArachnaphobiaShieldSettings.trackScale) == "number")
 				and ArachnaphobiaShieldSettings.trackScale or 1.0
-			print(("AS| grow = %d%% (100 = default, allowed 80-120)")
+			print(("AS| scale = %d%% (100 = default, allowed 80-120)")
 				:format(math.floor(cur * 100 + 0.5)))
 			return
 		end
 		if v ~= math.floor(v) or v < 80 or v > 120 then
-			print("AS| grow: expected a whole number 80-120 (100 = default)")
+			print("AS| scale: expected a whole number 80-120 (100 = default)")
 			return
 		end
 		ArachnaphobiaShieldSettings.trackScale = v / 100
-		print(("AS| grow = %d%%"):format(v))
+		print(("AS| scale = %d%%"):format(v))
 	elseif first == "drop" then
 		-- drop = how far below the plate the cover is centred (models hang
 		-- below their nameplate)
@@ -296,7 +298,7 @@ function ArachnaphobiaShield.Slash(msg)
 		-- No '|' chars in chat text: the WoW chat filter eats chat-control
 		-- sequences like |t / |h (AS11) — use ' / ' separators.
 		print("AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>")
-		print("AS| Advanced: grow N (80-120, 100 = default) / drop N / names / name X / forget X")
+		print("AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X")
 	else
 		print(("AS| unknown subcommand '%s' - /as help for usage"):format(first))
 	end
@@ -336,11 +338,11 @@ function ArachnaphobiaShield.Selftest()
 			if ArachnaphobiaShield.Cover.IsAllocated(slot) then tracked = tracked + 1 end
 		end
 	end
-	-- v0.4.1: report the same units the commands accept (grow %).
-	local growPct = math.floor((tonumber(s.trackScale) or 1.0) * 100 + 0.5)
+	-- v0.4.1: report the same units the commands accept (scale %).
+	local scalePct = math.floor((tonumber(s.trackScale) or 1.0) * 100 + 0.5)
 	local nearLabel = ("auto(x%.1f)"):format(tonumber(s.nearBoost) or 2.6)
-	print(("AS| mode=tracking tracked=%d grow=%d%% drop=%s near=%s | covers shown=%d/%d | fallbackSize=%s | limited=%s paused=%s"):format(
-		tracked, growPct,
+	print(("AS| mode=tracking tracked=%d scale=%d%% drop=%s near=%s | covers shown=%d/%d | fallbackSize=%s | limited=%s paused=%s"):format(
+		tracked, scalePct,
 		tostring(s.drop), nearLabel,
 		ArachnaphobiaShield.Cover.ShownCount(), ArachnaphobiaShield.Cover.MAX,
 		tostring(s.coverSize), tostring(ArachnaphobiaShield.coverageLimited == true), tostring(ArachnaphobiaShield.autoSuspended == true)))
@@ -488,12 +490,12 @@ local function plateReads(plate)
 	return w, ps
 end
 
-local function plateSize(w, ps, ourScale, grow, fallback)
+local function plateSize(w, ps, ourScale, scale, fallback)
 	local p = ourScale
 	if type(ps) == "number" and ps > 0 then p = ps end
 	local toLocal = ourScale / p
 	local size = fallback * toLocal
-	if type(w) == "number" and w > 0 then size = w * grow end
+	if type(w) == "number" and w > 0 then size = w * scale end
 	return math.max(MIN_TRACK * toLocal, math.min(MAX_TRACK * toLocal, size))
 end
 
@@ -567,7 +569,7 @@ function ArachnaphobiaShield.TrackTick()
 	local C, U = ArachnaphobiaShield.Cover, ArachnaphobiaShield.Units
 	local s = ArachnaphobiaShieldSettings
 	local t = ArachnaphobiaShield.track
-	local grow = tonumber(s.trackScale) or 1.0
+	local scale = tonumber(s.trackScale) or 1.0
 	local dropK = tonumber(s.drop) or 0.5
 	local nearB = tonumber(s.nearBoost) or 2.6
 	local grace = math.max(1, math.floor(((tonumber(s.trackRelease) or 0.5)
@@ -605,7 +607,7 @@ function ArachnaphobiaShield.TrackTick()
 						local apparent = (type(w) == "number" and w > 0
 							and type(ps) == "number" and ps > 0) and (w * ps) or nil
 						local boost = nearBoostFor(apparent, nearB)
-						local size = plateSize(w, ps, ourScale, grow * boost, C.Size())
+						local size = plateSize(w, ps, ourScale, scale * boost, C.Size())
 						if nearDbg then
 							nearDbg[#nearDbg + 1] = token .. "="
 								.. (apparent and ("%.1f"):format(apparent) or "?")

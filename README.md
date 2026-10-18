@@ -4,11 +4,14 @@ Addon for **World of Warcraft Forever** (classic 1.x-line client, v1.60.1) that
 covers spider models with a nameplate-attached UI element. UI-layer only: no model
 swaps, no game-file modification.
 
-**Status: v0.4.7 — the picker window is tidied: the title is centered in
-the window and every outer margin is a uniform 15px; `/as help` now
-prints just two lines (the basics, then the advanced commands).**
-v0.4.6 parked the prefilled custom field's caret at the end of the prefix,
-so the user literally only types the file name. v0.4.5 fixed the picker
+**Status: v0.4.8 — `/as grow` is renamed to `/as scale` (same behavior:
+cover size as a percentage of the nameplate width, `80`–`120`, `100` =
+default; the saved value was already the `trackScale` multiplier).**
+v0.4.7 tidied the picker window: the title is centered in the window and
+every outer margin is a uniform 15px; `/as help` now prints just two
+lines (the basics, then the advanced commands). v0.4.6 parked the
+prefilled custom field's caret at the end of the prefix, so the user
+literally only types the file name. v0.4.5 fixed the picker
 custom-path UX: the field prefills the required
 `Interface\AddOns\ArachnaphobiaShield\Custom\` prefix, the hint line shows
 the full path (no more clipped error), and the empty `Custom\` folder ships
@@ -34,7 +37,8 @@ every 10 Hz tick from the nameplate's apparent width. Full history:
 docs/NEAR-RAMP.md. v0.4.0 fixed the
 blank `/as config` preview (the checker, backing and art now follow the
 in-game cover's one-frame layout and show cycle) and simplifies tuning:
-`/as grow` takes a percentage (`100` = default, allowed `80`–`120`), `/as
+`/as scale` (called `/as grow` until v0.4.8) takes a percentage (`100` =
+default, allowed `80`–`120`), `/as
 near` takes a level `0`–`3` (`0` off, `1` = closest only, `3` = from
 farther), and the dead `/as size` command is retired (the plate-width
 fallback it set never triggers on this client). v0.3.8 removed the
@@ -97,7 +101,7 @@ Enable enemy nameplates in the game. The addon starts enabled on a new install;
 `/as enable` also enables tracking immediately and retries paused coverage.
 `/as disable` stops tracking and hides every cover.
 No mouseover or separate auto command is needed. Tune coverage with `/as
-grow 120` (up to `120%` of the nameplate) and `/as drop 0.5` as needed.
+scale 120` (up to `120%` of the nameplate) and `/as drop 0.5` as needed.
 
 The cover follows the visible nameplate. Stacking or screen-edge clamping by
 the game can move a nameplate away from the model; this client exposes no usable
@@ -187,7 +191,7 @@ review and Classic filtering rules are in [docs/DATA-SOURCES.md](docs/DATA-SOURC
 | `/as enable` | enable tracking and retry paused coverage; enabled by default |
 | `/as disable` | stop tracking and hide every cover; stays disabled after reload |
 | `/as toggle` | switch between enabled tracking and disabled covers |
-| `/as grow [N]` | cover size as a **percentage** of the nameplate width, whole number `80`–`120`, `100` = default |
+| `/as scale [N]` | cover size as a **percentage** of the nameplate width, whole number `80`–`120`, `100` = default |
 | `/as drop [N]` | how far below the nameplate it sits (`0`–`4`, default `0.5` — calibrated in game 2026-10-16) |
 | `/as name <name>` | "cover this one too": add an **exact** creature name (spaces allowed) |
 | `/as names` | list the names you added |

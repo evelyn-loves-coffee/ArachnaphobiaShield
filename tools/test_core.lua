@@ -259,22 +259,22 @@ local out = capture(function() ArachnaphobiaShield.Slash("") end)
 check(#out == 3 and out[1]:find("WoW 1%.60%.1") and out[3]:find("mode=tracking"),
     "status: reports client build and tracking mode")
 
--- ---- /as grow / /as near: v0.4.1 percentage and automatic near --------
-out = capture(function() ArachnaphobiaShield.Slash("grow 100") end)
-check(#out == 1 and out[1]:find("grow = 100%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.0,
-    "grow: 100 is the default and stores a 1.0 multiplier")
-out = capture(function() ArachnaphobiaShield.Slash("grow 80") end)
-check(out[1]:find("grow = 80%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 0.8, "grow: 80 stores 0.8")
-out = capture(function() ArachnaphobiaShield.Slash("grow 120") end)
-check(out[1]:find("grow = 120%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.2, "grow: 120 stores 1.2")
+-- ---- /as scale / /as near: v0.4.1 percentage and automatic near -------
+out = capture(function() ArachnaphobiaShield.Slash("scale 100") end)
+check(#out == 1 and out[1]:find("scale = 100%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.0,
+    "scale: 100 is the default and stores a 1.0 multiplier")
+out = capture(function() ArachnaphobiaShield.Slash("scale 80") end)
+check(out[1]:find("scale = 80%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 0.8, "scale: 80 stores 0.8")
+out = capture(function() ArachnaphobiaShield.Slash("scale 120") end)
+check(out[1]:find("scale = 120%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.2, "scale: 120 stores 1.2")
 for _, bad in ipairs({ "79", "121", "1.5" }) do
-    out = capture(function() ArachnaphobiaShield.Slash("grow " .. bad) end)
-    check(#out == 1 and out[1]:find("whole number 80-120", 1, true), "grow rejects: " .. bad)
+    out = capture(function() ArachnaphobiaShield.Slash("scale " .. bad) end)
+    check(#out == 1 and out[1]:find("whole number 80-120", 1, true), "scale rejects: " .. bad)
 end
-out = capture(function() ArachnaphobiaShield.Slash("grow abc") end)
-check(#out == 1 and out[1]:find("grow = 120%", 1, true), "grow: non-numeric input reports the current value")
-out = capture(function() ArachnaphobiaShield.Slash("grow") end)
-check(#out == 1 and out[1]:find("grow = 120%", 1, true), "grow: no argument reports the current percentage")
+out = capture(function() ArachnaphobiaShield.Slash("scale abc") end)
+check(#out == 1 and out[1]:find("scale = 120%", 1, true), "scale: non-numeric input reports the current value")
+out = capture(function() ArachnaphobiaShield.Slash("scale") end)
+check(#out == 1 and out[1]:find("scale = 120%", 1, true), "scale: no argument reports the current percentage")
 out = capture(function() ArachnaphobiaShield.Slash("near") end)
 check(#out == 1 and out[1]:find("automatic", 1, true),
     "near: reports the boost is automatic now")
@@ -286,7 +286,7 @@ check(ArachnaphobiaShieldSettings.nearThreshold == nil,
 out = capture(function() ArachnaphobiaShield.Slash("help") end)
 check(#out == 2
     and out[1] == "AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>"
-    and out[2] == "AS| Advanced: grow N (80-120, 100 = default) / drop N / names / name X / forget X",
+    and out[2] == "AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X",
     "help: prints the two simplified command lines exactly")
 
 -- ---- predicate ----------------------------------------------------------
@@ -1322,7 +1322,7 @@ O.Close()
 -- ---- /as reset: factory defaults --------------------------------------
 -- State entering this section: tracking disabled, pool released.
 capture(function() ArachnaphobiaShield.Slash("cover blue") end)
-capture(function() ArachnaphobiaShield.Slash("grow 120") end)
+capture(function() ArachnaphobiaShield.Slash("scale 120") end)
 capture(function() ArachnaphobiaShield.Slash("drop 1.25") end)
 capture(function() ArachnaphobiaShield.Slash("near 1") end)
 capture(function() ArachnaphobiaShield.Slash("name Reset Test Spider") end)
