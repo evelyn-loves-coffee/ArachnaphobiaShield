@@ -8,7 +8,7 @@ Covers never accept mouse input or store screen positions.
   * /as reset: restore every saved setting to its factory default.
   * Bare /as prints diagnostics.
 
-Client facts (docs/PLAN.md §2, verified in-client 2026-10-13):
+Client facts (see docs/HANDOFF.md, verified in-client 2026-10-13):
   * WoW Forever 1.60.1 / build 70374 / interface 16001, Lua 5.1
   * RegisterEvent ERRORS on unknown events — only AS6-confirmed events
   * Slash = two-part registration (SLASH_ASn + SlashCmdList["AS"])
@@ -74,7 +74,7 @@ local DEFAULTS = {
 	-- growing as the camera approaches, so the calibrated plate-proportional
 	-- cover under-covers close spiders (legs showing - owner screenshot
 	-- 2026-10-16). True camera distance is unmeasurable on this client
-	-- (every position API absent, see docs/API-VERIFICATION.md); the only
+	-- (every position API absent, see docs/HANDOFF.md); the only
 	-- distance signal the plate exposes is its apparent width (GetWidth x
 	-- GetEffectiveScale, in UI-scale px). Every 10 Hz tick multiplies the
 	-- tracked size by nearBoostFor(apparent): 1.0 at/under the ramp's low
@@ -84,7 +84,7 @@ local DEFAULTS = {
 	-- approaches (debug capture 2026-10-17: far plates steady at 73.0,
 	-- approach traces 74.6->77.7->84.4->89.7 and 73.0->77.0->80.5->82.8
 	-- ->86.1), so the ramp must sit INSIDE that range - knees below the
-	-- 73 clamp boost far plates (the v0.4.1/v0.4.2 bug, docs/NEAR-RAMP.md).
+	-- 73 clamp boost far plates (the v0.4.1/v0.4.2 bug, see docs/HANDOFF.md).
 	-- The high knee sits below the measured close-range apparent widths
 	-- (87-113 UI, 1.205 px/UI calibration, 2026-10-16 screenshots) so the
 	-- boost is constant across the whole band the client clamps to - the
@@ -314,7 +314,7 @@ function ArachnaphobiaShield.Selftest()
 	local now = GetTime()
 	if now - lastSelftest < 0.25 then return end
 	lastSelftest = now
-	-- AS2 (docs/API-VERIFICATION.md): GetBuildInfo returns FOUR values on this
+	-- AS2 (see docs/HANDOFF.md): GetBuildInfo returns FOUR values on this
 	-- client - "1.60.1", "70374", "Oct 12 2026", "16001" - i.e. build string,
 	-- build number, build date, interface version. Not major/minor/patch.
 	-- _VERSION already reads "Lua 5.1", so the old "Lua %s" prefix printed
@@ -511,7 +511,7 @@ end
 -- close range. Smoothstep keeps the slope zero at both knees, so the size
 -- change starts and ends gently while approaching. History: knee 30
 -- (v0.4.1) and 60 (v0.4.2) both sat below the client's 73 clamp and
--- boosted far plates (docs/NEAR-RAMP.md).
+-- boosted far plates; see docs/HANDOFF.md).
 local NEAR_RAMP_LO, NEAR_RAMP_HI = 75, 85
 local function nearBoostFor(apparent, ceiling)
 	local b = type(ceiling) == "number" and ceiling or 3.0

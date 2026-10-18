@@ -611,7 +611,7 @@ UIParent.scale, plateA.effScale = 1, 0.5
 plateA:SetWidth(100)
 
 -- Near-field boost, automatic (v0.4.1; knees retuned in v0.4.2 (30->60)
--- and v0.4.3 (60->75 / 80->85) after in-game review - docs/NEAR-RAMP.md).
+-- and v0.4.3 (60->75 / 80->85) after in-game review; see docs/HANDOFF.md).
 -- 2026-10-16 owner screenshot: the closest visible spider showed its legs.
 -- The client's apparent-width range is narrow: far plates are clamped at
 -- 73.0 UI and grow to ~90 UI on approach (debug capture 2026-10-17), so

@@ -5,7 +5,7 @@ locations"): creature IDs of every spider the owner wants covered, annotated
 with the zone they live in, plus the name fragments that catch anything the ID
 list misses.
 
-Why IDs are the PRIMARY signal (docs/PLAN.md detection):
+Why IDs are the PRIMARY signal (see docs/HANDOFF.md):
   * UnitCreatureID is exact - no name guessing, no language issues, and it
     covers creatures whose NAME gives nothing away ("Moss Stalker", "Crypt
     Horror", "Krethis Shadowspinner") and whose creature FAMILY is not Spider.

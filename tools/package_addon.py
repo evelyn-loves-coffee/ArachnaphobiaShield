@@ -67,8 +67,8 @@ def main():
         archive.write(root / "README.md", "ArachnaphobiaShield/README.md")
         archive.write(root / "LICENSE", "ArachnaphobiaShield/LICENSE")
         archive.write(root / "LICENSE", "ArachnaphobiaShield/LICENSE.txt")
-        # Ship current controls only; archived plans advertise removed features.
-        for name in ("HANDOFF.md", "TRACKING-ONLY.md", "COVER-IMAGES.md", "CORPSE-HANDLING.md", "DATA-SOURCES.md"):
+        # Ship current references only; historical docs live in Git.
+        for name in ("HANDOFF.md", "COVER-IMAGES.md"):
             source = root / "docs" / name
             archive.write(source, "ArachnaphobiaShield/" + source.relative_to(root).as_posix())
         for name in ("config_preview.png", "cover_choices.png"):
