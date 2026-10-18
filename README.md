@@ -1,11 +1,11 @@
-# Arachnaphobia Shield — Arachnophobia Addon
+# Arachnaphobia Shield — WoW Forever Addon
 
 Addon for **World of Warcraft Forever** (classic 1.x-line client, v1.60.1)
 that covers spider models with a nameplate-attached UI element. UI-layer
 only: no model swaps, no game-file modification. Covers are always
 click-through and always fully opaque.
 
-**Status: v1.0.0.** This README documents current behavior only; the
+**Status: v1.1.0.** This README documents current behavior only; the
 change history lives in Git.
 
 ## How it works
@@ -65,15 +65,26 @@ disabled after reload).
 
 ## How a spider is recognised
 
-1. **Creature ID** against a curated Classic database (`SpiderDB.lua`,
-   124 spider and spider-looking creature IDs) — catches names that give
-   nothing away ("Moss Stalker", "Crypt Horror").
-2. **Creature family** `Spider` (id 3) — covers every other real spider.
-3. **Name fragments** (`spider`, `weaver`, `widow`, `skitter`,
-   `tarantula`, …, case-insensitive) — last resort.
+1. **Creature family** `Spider` (id 3) — the primary signal; the addon
+   does its best to detect from the in-game family identifier, which
+   covers every creature the game itself files as a spider.
+2. **Name fragments** (`spider`, `tarantula`, `webspinner`, `widow`,
+   `skitterer`, `webwood`, …, case-insensitive) — for units whose family
+   read is unavailable.
+3. **Extra names** — an exact-name list you build with
+   `/as name <exact name>` (per character).
 
-Spotted a spider none of the three caught? `/as name <exact name>` adds
-it permanently (per character). Player units are excluded.
+Detection is **best-effort**: some spider-like creatures may not be
+identified — a creature filed outside the Spider family whose name gives
+nothing away (for example, a "Crypt Horror") is invisible to layers 1
+and 2. When you spot one, `/as name <exact name>` adds it permanently.
+
+**Everything stays local.** `/as name` entries are stored only in the
+addon's SavedVariables on your machine; they are never uploaded,
+transmitted or reported anywhere. The author will do their best to add
+instances of enemy units as the game is explored, so coverage can be
+rebuilt from scratch out of first-hand observation over time. Player
+units are excluded.
 
 ## Custom cover images
 
@@ -115,14 +126,15 @@ troubleshooting table: [docs/COVER-IMAGES.md](docs/COVER-IMAGES.md).
 
 Arachnaphobia Shield is an independent **spiritual successor to the
 accessibility approach** of [NoSpider - Arachnophobia Mode](https://www.curseforge.com/wow/addons/nospider-arachnophobia-mode)
-by **GrasHopper42**. NoSpider code, artwork, bundled libraries, zone
-tables and spawn coordinates have not been copied; its native
-parent-and-anchor overlay approach informed this implementation.
+by **GrasHopper42**. No NoSpider code, artwork, bundled libraries,
+zone tables, spawn coordinates or creature lists have been copied or
+bundled; its native parent-and-anchor overlay approach informed this
+implementation.
 
-The bundled creature database is a **Vanilla Classic baseline** of 124
-owner-curated IDs. No expansion zone tables or spawn datasets are
-bundled; accessible family/name matching also covers creatures absent
-from the list.
+No creature database is bundled: detection relies on in-client signals
+(creature family, name matching) and the owner's own extra-name list.
+No zone tables or spawn datasets are bundled or required for the
+nameplate overlay.
 
 ## Developer documentation
 

@@ -6,12 +6,17 @@ local U = {}
 ArachnaphobiaShield.Units = U
 local A = ArachnaphobiaShield.Access
 
--- Fragments carried over from the pre-database releases, kept as a UNION with
--- the owner's list so upgrading never loses coverage of something an older
--- build covered (fail-open: covering a non-spider costs a disc, missing a
--- spider costs the whole point of the addon). "Spider" itself no longer needs
--- listing - the DB has "spider" and matching is case-insensitive now.
-U.NAME_PATTERNS = { "Gloomweaver" }
+-- Built-in name fragments (owner-maintained): generic spider vocabulary,
+-- matched case-insensitively. They back up the primary family check for
+-- units whose family read is unavailable. settings.namePatterns ADDS to this
+-- list, never replaces it. Fail-open bias: covering a non-spider costs a
+-- disc, missing a spider costs the whole point of the addon.
+U.NAME_PATTERNS = {
+	"spider", "tarantula", "webspinner", "silkspinner",
+	"venomfang", "darkfang", "widow", "recluse",
+	"skitterer", "creeper", "smolderweb", "webwood",
+	"nerub", "crypt fiend", "Gloomweaver",
+}
 
 -- settings.namePatterns is ADDITIVE, never a replacement: the owner's
 -- SavedVariables already holds the old two-entry list and settings migration
@@ -33,9 +38,7 @@ local function namePatterns()
 			out[#out + 1] = frag
 		end
 	end
-	-- Owner's curated fragments first, then the pre-database ones, then
-	-- whatever the user added (an absent/empty DB still matches "Gloomweaver").
-	for _, pat in ipairs((ArachnaphobiaShield.DB and ArachnaphobiaShield.DB.patterns) or {}) do add(pat) end
+	-- Built-in fragments first, then whatever the user added.
 	for _, pat in ipairs(U.NAME_PATTERNS) do add(pat) end
 	for _, pat in ipairs(user) do add(pat) end
 	patCache, patStamp = out, #user
@@ -68,24 +71,10 @@ function U.IsSpider(unit)
 		end
 	end
 
-	-- 2. Curated creature-ID database (owner data, SpiderDB.lua). Checked
-	--    FIRST: it is exact, it catches names that give nothing away ("Moss
-	--    Stalker", "Crypt Horror", "Krethis Shadowspinner") and bug-model
-	--    creatures the family table files outside Spider (15475 Beetle,
-	--    16698 Corpse Scarab). UnitCreatureID is confirmed on mouseover
-	--    (in-game 2026-10-15: id=1504); on nameplate tokens it is probed in
-	--    the next round, and a nil here simply falls through to family.
+	-- 2. Primary: creature family "Spider" (id 3) — confirmed in-client
+	--    (AS4) and on nameplate tokens (NP1, 2026-10-15). Language-
+	--    independent; covers every creature the game itself files as Spider.
 	local isSpider = false
-	local db = ArachnaphobiaShield.DB and ArachnaphobiaShield.DB.ids
-	if db and UnitCreatureID then
-		local id = A.Query(UnitCreatureID, unit)
-		if type(id) == "number" and db[id] == true then
-			isSpider = true
-		end
-	end
-
-	-- 3. Primary for unlisted units: creature family "Spider" (id 3) —
-	--    confirmed in-client (AS4) and on nameplate tokens (NP1, 2026-10-15).
 	if UnitCreatureFamily then
 		local _, famId = A.Query(UnitCreatureFamily, unit)
 		if famId == 3 then
@@ -93,8 +82,8 @@ function U.IsSpider(unit)
 		end
 	end
 
-	-- 4. Fallback: name fragments + user extraNames (units reporting no family
-	--    and no id). Matching is case-INsensitive (the curated fragments are
+	-- 3. Fallback: name fragments + user extraNames (units reporting no
+	--    family). Matching is case-INsensitive (the built-in fragments are
 	--    lowercase, unit names are not) and uses plain find, never Lua pattern
 	--    matching - these lists contain user data, "%", "-" and "(" are common
 	--    in NPC names.
@@ -128,7 +117,7 @@ function U.IsSpider(unit)
 		return false
 	end
 
-	-- 5. Level window.
+	-- 4. Level window.
 	local lvl = A.Query(UnitLevel, unit)
 	if type(lvl) ~= "number" then return false end
 	local minL = (type(s.minLevel) == "number") and s.minLevel or 1
@@ -137,7 +126,7 @@ function U.IsSpider(unit)
 		return false
 	end
 
-	-- 6. Optional hostile-only gate. UnitCanAttack is TWO-ARG on this client
+	-- 5. Optional hostile-only gate. UnitCanAttack is TWO-ARG on this client
 	--    (AS5): UnitCanAttack("player", unit) = "can I attack it".
 	if s.requireHostile then
 		if A.Query(UnitCanAttack, "player", unit) ~= true then

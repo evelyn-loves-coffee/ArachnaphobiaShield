@@ -19,7 +19,7 @@ Client facts (see docs/HANDOFF.md, verified in-client 2026-10-13):
 ]]
 
 ArachnaphobiaShield = ArachnaphobiaShield or {}
-ArachnaphobiaShield.version = "1.0.0"
+ArachnaphobiaShield.version = "1.1.0"
 local A = ArachnaphobiaShield.Access
 
 ArachnaphobiaShield.hidden = nil  -- panic-hide seam (M4); true hides every cover
@@ -55,8 +55,9 @@ local DEFAULTS = {
 	-- fades them at distance regardless). Legacy keys are dropped in
 	-- Appearance.Normalize.
 	coverSize = 96,
-	-- ADDITIONAL name fragments on top of the curated database (SpiderDB.lua).
-	-- Empty by default: the DB already carries the owner's fragments.
+	-- ADDITIONAL name fragments on top of the built-in list
+	-- (Units.NAME_PATTERNS). Empty by default: the built-in list already
+	-- carries the spider vocabulary.
 	namePatterns = {},
 	extraNames = {},
 	requireHostile = false,
@@ -251,7 +252,7 @@ function ArachnaphobiaShield.Slash(msg)
 	elseif first == "name" then
 		-- Owner escape hatch: see a spider that is not covered, name it, done.
 		-- EXACT names only (extraNames) — a loose fragment could blanket half a
-		-- zone, and curated fragments already live in SpiderDB.lua.
+		-- zone, and the built-in fragments live in Units.lua.
 		local name = (msg or ""):match("^%s*%S+%s*(.-)%s*$")
 		if not name or name == "" then
 			print("AS| usage: /as name <exact creature name>  (list them with /as names)")

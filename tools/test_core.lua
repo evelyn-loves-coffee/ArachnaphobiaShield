@@ -224,7 +224,7 @@ end
 ArachnaphobiaShieldSettings = { enabled = "yes", parkCount = 8, arrange = true,
     covers = { Partner = { init = true, list = { { x = 100, y = 200, kind = "park" } } } },
     autoTrack = false, stickyCovers = true }
-for _, file in ipairs({ "SpiderDB", "Access", "Units", "DeathWarning", "Appearance", "Cover", "Config", "Core" }) do
+for _, file in ipairs({ "Access", "Units", "DeathWarning", "Appearance", "Cover", "Config", "Core" }) do
     dofile("ArachnaphobiaShield/" .. file .. ".lua")
 end
 
@@ -327,38 +327,40 @@ setUnit("t4", { name = "Skitterclaw", level = 3 })
 check(ArachnaphobiaShield.Units.IsSpider("t4") == true, "predicate: extraNames exact match")
 ArachnaphobiaShieldSettings.extraNames = {}
 
--- ---- curated creature-ID database (owner data, SpiderDB.lua) -----------
-check(type(ArachnaphobiaShield.DB) == "table" and ArachnaphobiaShield.DB.ids[1504] == true,
-	"db: loaded with the owner's spider IDs (1504 Young Night Web Spider)")
-check(#ArachnaphobiaShield.DB.patterns >= 14, "db: loaded with the owner's name fragments")
-
--- Names that give nothing away, filed outside the Spider family: only the ID
--- list can catch these, so it is consulted first.
-setUnit("d1", { name = "Moss Stalker", level = 12, famName = "Beast", famId = 1, id = 1780 })
-check(ArachnaphobiaShield.Units.IsSpider("d1") == true, "db: 'Moss Stalker' (family Beast) covered by ID 1780")
-setUnit("d2", { name = "Crypt Horror", level = 50, id = 8557 })
-check(ArachnaphobiaShield.Units.IsSpider("d2") == true,
-	"db: 'Crypt Horror' covered by ID even with no creature family reported")
-setUnit("d3", { name = "Beetle", level = 1, famName = "Beast", famId = 1, id = 15475 })
-check(ArachnaphobiaShield.Units.IsSpider("d3") == true,
-	"db: bug-model creature on the owner's list is covered (15475 Beetle)")
-setUnit("d4", { name = "Young Scavenger", level = 24, famName = "Beast", famId = 1, id = 1499 })
+-- ---- detection layers: family -> built-in fragments -> extraNames ------
+-- Family 3 is primary. A creature filed outside the Spider family whose
+-- name gives nothing away is NOT covered by family or fragments; the
+-- owner's escape hatch for those is /as name (exact name, per character).
+-- The real "Moss Stalker" is Spider family (owner, in-game) and is
+-- covered by layer 1; this fixture models a Beast-family creature whose
+-- name gives nothing away.
+setUnit("d1", { name = "Moss Crawler", level = 12, famName = "Beast", famId = 1 })
+check(ArachnaphobiaShield.Units.IsSpider("d1") == false,
+	"layers: family-Beast creature with no spider word in the name is not covered")
+ArachnaphobiaShieldSettings.extraNames = { "Moss Crawler" }
+check(ArachnaphobiaShield.Units.IsSpider("d1") == true,
+	"layers: /as name (extraNames) recovers a family-Beast creature")
+ArachnaphobiaShieldSettings.extraNames = {}
+setUnit("d2", { name = "Crypt Horror", level = 50 })
+check(ArachnaphobiaShield.Units.IsSpider("d2") == false,
+	"layers: no creature family and no fragment in the name -> not covered")
+setUnit("d4", { name = "Young Scavenger", level = 24, famName = "Beast", famId = 1 })
 check(ArachnaphobiaShield.Units.IsSpider("d4") == false,
-	"db: a non-spider id (1499 Young Scavenger) is not covered by name or family")
-setUnit("d5", { name = "Ash Spider", level = 20, id = 999999, famName = "Beast", famId = 1 })
+	"layers: a non-spider beast is not covered by name or family")
+setUnit("d5", { name = "Ash Spider", level = 20, famName = "Beast", famId = 1 })
 check(ArachnaphobiaShield.Units.IsSpider("d5") == true,
-	"db: an unlisted id still falls through to the name fragment")
+	"layers: a non-spider-family creature with a spider name fragment is covered")
 setUnit("d6", { name = "WEBWOOD LURKER", level = 20 })
-check(ArachnaphobiaShield.Units.IsSpider("d6") == true, "db: fragments match case-insensitively")
+check(ArachnaphobiaShield.Units.IsSpider("d6") == true, "layers: fragments match case-insensitively")
 
--- settings.namePatterns is ADDITIVE (the owner's SavedVariables already holds
--- the old two-entry list; replacing would drop "webwood", "nerub", ...).
+-- settings.namePatterns is ADDITIVE (user fragments are unioned on top of
+-- the built-in list; replacing would drop them).
 ArachnaphobiaShieldSettings.namePatterns = { "Arachnid" }
 setUnit("d7", { name = "Giant Arachnid", level = 10 })
-check(ArachnaphobiaShield.Units.IsSpider("d7") == true, "db: user fragments are honoured")
+check(ArachnaphobiaShield.Units.IsSpider("d7") == true, "layers: user fragments are honoured")
 setUnit("d8", { name = "Webwood Silkspinner", level = 20 })
 check(ArachnaphobiaShield.Units.IsSpider("d8") == true,
-	"db: built-in fragments still work while user fragments are set")
+	"layers: built-in fragments still work while user fragments are set")
 ArachnaphobiaShieldSettings.namePatterns = {}
 clearUnits()
 
@@ -816,21 +818,7 @@ ArachnaphobiaShield.ClearTrack()
 setPlate(1, nil)
 clearUnits()
 
--- ---- Forever restrictions and Classic-only baseline ----------------------
-local countIDs = 0
-for _ in pairs(ArachnaphobiaShield.DB.ids) do countIDs = countIDs + 1 end
-check(countIDs == 124 and ArachnaphobiaShield.DB.counts.ids == countIDs,
-	"classic data: declared count matches the shipped creature database")
-local excludedIDs = { 17236, 16350, 16351, 16352, 17522, 17523, 17683,
-	18466, 18467, 18647, 20714, 20998, 22044, 22132 }
-local includesExpansion = false
-for _, id in ipairs(excludedIDs) do
-	if ArachnaphobiaShield.DB.ids[id] then includesExpansion = true end
-end
-check(not includesExpansion, "classic data: TBC-only creatures are excluded, including Tcha'kaz in a Classic zone")
-check(ArachnaphobiaShield.DB.ids[15952] and ArachnaphobiaShield.DB.ids[16698],
-	"classic data: original Naxxramas creatures are retained without an arbitrary numeric ID cutoff")
-
+-- ---- Forever restrictions ----------------------------------------------
 ArachnaphobiaShield.autoSuspended = false
 ArachnaphobiaShield.Cover.ClearAll()
 ArachnaphobiaShield.ClearTrack()

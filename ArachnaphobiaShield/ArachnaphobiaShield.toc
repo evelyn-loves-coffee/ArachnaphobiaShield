@@ -1,11 +1,10 @@
 ## Interface: 16001
 ## Title: Arachnaphobia Shield
 ## Notes: UI-layer spider covers for arachnophobia (WoW Forever 1.60.1)
-## Version: 1.0.0
+## Version: 1.1.0
 ## Author: evelyn-loves-coffee
 ## IconTexture: Interface\AddOns\ArachnaphobiaShield\icon.tga
 ## SavedVariables: ArachnaphobiaShieldSettings
-SpiderDB.lua
 Access.lua
 Units.lua
 DeathWarning.lua

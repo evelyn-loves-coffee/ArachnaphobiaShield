@@ -1,9 +1,14 @@
 # Handoff (maintainer)
 
-**Current: v1.0.0** — `/as scale` band widened to 40–130 (100 =
-default, stored 0.4–1.3); `/as selftest` trimmed to live state (the
-constant `mode` and `fallbackSize` fields are gone; `limited` /
-`paused` remain). Bare `/as` mirrors `/as help`; `/as version` and
+**Current: v1.1.0** — creature-ID database removed (it was a
+NoSpider-derived compilation, and the level cap blocked the in-game
+family audit that would have verified it): detection is now creature
+family `Spider` (3) → built-in name fragments → owner extra-names
+(`/as name`, local-only, never uploaded); coverage is best-effort and
+user entries rebuild the database from first-hand observation. v1.0.0:
+`/as scale` band widened to 40–130 (100 = default, stored 0.4–1.3);
+`/as selftest` trimmed to live state (the constant `mode` and
+`fallbackSize` fields are gone; `limited` / `paused` remain). Bare `/as` mirrors `/as help`; `/as version` and
 `/as selftest` split the old diagnostics; default cover is charcoal;
 default `drop` is 0.3. Automatic nameplate-attached covers, image
 picker, custom TGA support, look-away corpse warning. Offline Lua 5.1
@@ -26,8 +31,17 @@ replacement; live swaps are acceptable to the owner with `/reload`.
 - 24-slot pool; reverse ownership map prevents a recycled slot from being
   adopted by another unit; rejected cleanup quarantines a slot; repeated
   failures pause tracking (`/as enable` retries).
-- Recognition: curated 124-ID Classic database → creature family
-  `Spider` (3) → name fragments. Player units excluded.
+- Recognition: creature family `Spider` (3) → built-in name fragments
+  → owner extra-names (`/as name`). Best-effort by design: detection
+  relies on the in-game family identifier, and some spider-like
+  creatures (e.g. Crypt Horror, filed outside Spider) go unidentified.
+  No creature-ID database is bundled (the 124-ID list was removed
+  post-1.0: it was a NoSpider-derived compilation, and the level cap
+  prevented the in-game audit that would have verified it entry-by-
+  entry). `/as name` entries are local-only (SavedVariables; never
+  uploaded or transmitted) and seed the rebuild of coverage from
+  first-hand observation — the author adds instances of enemy units as
+  the game is explored. Player units excluded.
 - Covers are always fully opaque (the client's distance fade makes any
   opacity control fiction — see constraints below).
 - Picker: `/as config` opens an explicit window (the only input-taking
@@ -91,13 +105,14 @@ mouseover detection (owner rule).
 
 ## Data sources
 
-Vanilla Classic baseline; 124 owner-curated spider IDs; the TBC-era
-Tcha'kaz entry was removed. No zone/sub-zone tables or spawn datasets are
-bundled and none are required for nameplate overlays. If general area
-metadata ever becomes necessary, **LibTourist Classic Era (MIT)** is the
-selected source; Questie data and Wowhead-derived bulk spawn tables are
-excluded (license). NoSpider data is not copied. Full review rules were in
-`docs/DATA-SOURCES.md` (removed with the consolidation; kept in Git).
+No creature database, zone/sub-zone tables or spawn datasets are
+bundled; detection is creature family + name fragments + owner
+extra-names, none of which require external data. If general area
+metadata ever becomes necessary, **LibTourist Classic Era (MIT)** remains
+the selected source; Questie data and Wowhead-derived bulk spawn tables
+remain excluded (license). NoSpider is design inspiration only — no code
+or data copied. Full review rules were in `docs/DATA-SOURCES.md` (removed
+with the consolidation; kept in Git).
 
 ## Known issues
 
