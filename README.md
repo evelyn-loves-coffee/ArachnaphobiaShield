@@ -5,7 +5,7 @@ that covers spider models with a nameplate-attached UI element. UI-layer
 only: no model swaps, no game-file modification. Covers are always
 click-through and always fully opaque.
 
-**Status: v0.4.9.** This README documents current behavior only; the
+**Status: v1.0.0.** This README documents current behavior only; the
 change history lives in Git.
 
 ## How it works
@@ -14,7 +14,7 @@ change history lives in Git.
   movement and scale carry the cover between polling ticks. No targeting,
   mouseover or input is needed; tracking is on by default.
 - Cover size is a **percentage of the nameplate width** (`/as scale`,
-  whole number `80`–`120`, `100` = default).
+  whole number `40`–`130`, `100` = default).
 - **Near-field boost (automatic):** the client holds nameplate apparent
   size in a narrow band (~73–90 UI px) while the model keeps growing as
   you close in, so a plate-proportional cover would under-cover close
@@ -33,7 +33,7 @@ Extract the fixed ZIP and replace the `ArachnaphobiaShield/` folder in
 your client's `Interface/AddOns/` directory. The `.toc` must sit at
 `Interface/AddOns/ArachnaphobiaShield/ArachnaphobiaShield.toc`, without an
 extra nested folder. Log in or `/reload`; `/as version` reports the
-version and `/as selftest` reports `mode=tracking`.
+version and `/as selftest` reports the live tracking state.
 
 Enable **enemy nameplates** in the game options. The addon starts enabled
 on a fresh install; `/as enable` also enables tracking and retries paused
@@ -46,13 +46,13 @@ disabled after reload).
 | :-- | :-- |
 | `/as` | usage (identical to `/as help`) |
 | `/as version` | print the addon version and the client's build / interface / Lua versions |
-| `/as selftest` | diagnostics: enabled, tracking, covers shown, limited / paused |
+| `/as selftest` | diagnostics: enabled, tracked, covers shown, limited / paused |
 | `/as config` | open the cover picker with preview, presets and custom-image path |
 | `/as cover <choice>` | select `fox`, `red`, `blue`, `sage`, `charcoal`, or `custom <local .tga path>` |
 | `/as enable` | enable tracking and retry paused coverage; enabled by default |
 | `/as disable` | stop tracking and hide every cover; stays disabled after reload |
 | `/as toggle` | switch between enabled tracking and disabled covers |
-| `/as scale [N]` | cover size as a **percentage** of the nameplate width, whole number `80`–`120`, `100` = default |
+| `/as scale [N]` | cover size as a **percentage** of the nameplate width, whole number `40`–`130`, `100` = default |
 | `/as drop [N]` | how far below the nameplate it sits (`0`–`4`, default `0.3`) |
 | `/as name <name>` | "cover this one too": add an **exact** creature name (spaces allowed) |
 | `/as names` | list the names you added |
@@ -92,7 +92,7 @@ troubleshooting table: [docs/COVER-IMAGES.md](docs/COVER-IMAGES.md).
 
 | Symptom | Fix |
 | :-- | :-- |
-| No covers at all | Enemy nameplates disabled in game options? Check `/as selftest` for `mode=tracking`; run `/as enable` (also retries after `paused=true`). |
+| No covers at all | Enemy nameplates disabled in game options? Check `/as selftest` for `limited=true`; run `/as enable` (also retries after `paused=true`). |
 | `/as selftest` reports `limited=true` | One or more client reads were unavailable; covers may be incomplete. Re-run `/as selftest` after `/reload`; report if it persists. |
 | Close spider shows legs | `/as scale 120` and/or `/as drop 0.5`; the automatic near boost already caps at ×3.0. |
 | Cover off the model | Nameplate stacking/clamping moved the plate itself — a client behavior no UI-layer addon can correct (see below). |

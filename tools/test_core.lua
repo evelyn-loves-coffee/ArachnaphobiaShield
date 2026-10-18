@@ -258,32 +258,33 @@ check(_G.SLASH_AS1 == "/as" and type(SlashCmdList["AS"]) == "function",
 local out = capture(function() ArachnaphobiaShield.Slash("") end)
 check(#out == 2
     and out[1] == "AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>"
-    and out[2] == "AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X",
+    and out[2] == "AS| Advanced: scale N (40-130, 100 = default) / drop N / names / name X / forget X",
     "status: bare /as prints usage, identical to /as help")
 out = capture(function() ArachnaphobiaShield.Slash("version") end)
 check(#out == 1 and out[1]:find("WoW 1%.60%.1") ~= nil and out[1]:find("interface 16001") ~= nil
     and out[1]:find("Lua 5.1") ~= nil,
     "version: reports the addon version, client build, interface and Lua")
 out = capture(function() ArachnaphobiaShield.Slash("selftest") end)
-check(#out == 2 and out[1]:find("enabled=") ~= nil and out[2]:find("mode=tracking") ~= nil,
-    "selftest: reports the live state and tracking mode")
+check(#out == 2 and out[1]:find("enabled=") ~= nil and out[2]:find("tracked=") ~= nil
+    and out[2]:find("limited=") ~= nil,
+    "selftest: reports the live state and tracking stats")
 
 -- ---- /as scale / /as near: v0.4.1 percentage and automatic near -------
 out = capture(function() ArachnaphobiaShield.Slash("scale 100") end)
 check(#out == 1 and out[1]:find("scale = 100%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.0,
     "scale: 100 is the default and stores a 1.0 multiplier")
-out = capture(function() ArachnaphobiaShield.Slash("scale 80") end)
-check(out[1]:find("scale = 80%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 0.8, "scale: 80 stores 0.8")
-out = capture(function() ArachnaphobiaShield.Slash("scale 120") end)
-check(out[1]:find("scale = 120%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.2, "scale: 120 stores 1.2")
-for _, bad in ipairs({ "79", "121", "1.5" }) do
+out = capture(function() ArachnaphobiaShield.Slash("scale 40") end)
+check(out[1]:find("scale = 40%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 0.4, "scale: 40 stores 0.4 (lower bound)")
+out = capture(function() ArachnaphobiaShield.Slash("scale 130") end)
+check(out[1]:find("scale = 130%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.3, "scale: 130 stores 1.3 (upper bound)")
+for _, bad in ipairs({ "39", "131", "1.5" }) do
     out = capture(function() ArachnaphobiaShield.Slash("scale " .. bad) end)
-    check(#out == 1 and out[1]:find("whole number 80-120", 1, true), "scale rejects: " .. bad)
+    check(#out == 1 and out[1]:find("whole number 40-130", 1, true), "scale rejects: " .. bad)
 end
 out = capture(function() ArachnaphobiaShield.Slash("scale abc") end)
-check(#out == 1 and out[1]:find("scale = 120%", 1, true), "scale: non-numeric input reports the current value")
+check(#out == 1 and out[1]:find("scale = 130%", 1, true), "scale: non-numeric input reports the current value")
 out = capture(function() ArachnaphobiaShield.Slash("scale") end)
-check(#out == 1 and out[1]:find("scale = 120%", 1, true), "scale: no argument reports the current percentage")
+check(#out == 1 and out[1]:find("scale = 130%", 1, true), "scale: no argument reports the current percentage")
 out = capture(function() ArachnaphobiaShield.Slash("near") end)
 check(#out == 1 and out[1]:find("automatic", 1, true),
     "near: reports the boost is automatic now")
@@ -295,7 +296,7 @@ check(ArachnaphobiaShieldSettings.nearThreshold == nil,
 out = capture(function() ArachnaphobiaShield.Slash("help") end)
 check(#out == 2
     and out[1] == "AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>"
-    and out[2] == "AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X",
+    and out[2] == "AS| Advanced: scale N (40-130, 100 = default) / drop N / names / name X / forget X",
     "help: prints the two simplified command lines exactly")
 
 -- ---- predicate ----------------------------------------------------------

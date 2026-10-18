@@ -1,10 +1,14 @@
 # Handoff (maintainer)
 
-**Current: v0.4.9** — bare `/as` now mirrors `/as help`; `/as version`
-and `/as selftest` split the old diagnostics; default cover is charcoal;
-default `drop` is 0.3. Automatic nameplate-attached covers, image picker,
-custom TGA support, look-away corpse warning. Offline Lua 5.1 suite green;
-packaged build re-validates the same suite against the extracted zip.
+**Current: v1.0.0** — `/as scale` band widened to 40–130 (100 =
+default, stored 0.4–1.3); `/as selftest` trimmed to live state (the
+constant `mode` and `fallbackSize` fields are gone; `limited` /
+`paused` remain). Bare `/as` mirrors `/as help`; `/as version` and
+`/as selftest` split the old diagnostics; default cover is charcoal;
+default `drop` is 0.3. Automatic nameplate-attached covers, image
+picker, custom TGA support, look-away corpse warning. Offline Lua 5.1
+suite green; packaged build re-validates the same suite against the
+extracted zip.
 
 Development and live testing happen on the owner's own machine: this
 checkout's `dist/` package is live-swapped into
@@ -63,7 +67,7 @@ removed with the doc consolidation; this summary is the live reference):
 
 `Core.lua` `plateSize()`: `size = plateWidth × (trackScale × nearBoost)`,
 clamped to `MIN_TRACK`–`MAX_TRACK` in local px. `trackScale` is the
-`/as scale` multiplier (0.8–1.2, default 1.0). `drop` offsets the cover
+`/as scale` multiplier (0.4–1.3, default 1.0). `drop` offsets the cover
 `drop` cover-heights below the plate (default 0.3 since v0.4.9; the
 2026-10-16 in-game calibration established the range, 0.5 fully inside).
 The near-field boost is a smoothstep of apparent width:

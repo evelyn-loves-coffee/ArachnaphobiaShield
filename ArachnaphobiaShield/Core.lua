@@ -19,7 +19,7 @@ Client facts (see docs/HANDOFF.md, verified in-client 2026-10-13):
 ]]
 
 ArachnaphobiaShield = ArachnaphobiaShield or {}
-ArachnaphobiaShield.version = "0.4.9"
+ArachnaphobiaShield.version = "1.0.0"
 local A = ArachnaphobiaShield.Access
 
 ArachnaphobiaShield.hidden = nil  -- panic-hide seam (M4); true hides every cover
@@ -65,8 +65,8 @@ local DEFAULTS = {
 	-- Native nameplate tracking is the only detection mode.
 	trackScale = 1.0,   -- cover local size = plate local width x this
 	-- v0.4.0: /as scale (renamed from /as grow in v0.4.8) is a PERCENTAGE
-	-- (100 = default 1.0, allowed 80-120); the stored value stays a
-	-- multiplier (0.8-1.2).
+	-- (100 = default 1.0, allowed 40-130); the stored value stays a
+	-- multiplier (0.4-1.3).
 	-- drop: centre the cover this many cover-heights below the plate.
 	-- Calibrated in game 2026-10-16 (owner screenshot, Tirisfal, Young Night
 	-- Web Spider): at 0.9 the model sat above the cover's top edge; at 0.5
@@ -122,10 +122,10 @@ local function EnsureSettings()
 			s[k] = freshDefault(v)
 		end
 	end
-	-- v0.4.0: legacy v0.3.x multipliers (0.2-6) are outside the new 80-120
+	-- v0.4.0: legacy v0.3.x multipliers (0.2-6) are outside the new 40-130
 	-- percent band; clamp them into it instead of silently keeping them.
 	if type(s.trackScale) == "number" then
-		s.trackScale = math.max(0.8, math.min(1.2, s.trackScale))
+		s.trackScale = math.max(0.4, math.min(1.3, s.trackScale))
 	end
 	-- Purge retired fields for every character at once. A late-loaded save
 	-- must not restore an input-taking mode or any screen-positioned cover.
@@ -171,7 +171,7 @@ _G.SLASH_AS1 = "/as"
 -- separators.
 function ArachnaphobiaShield.Help()
 	print("AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>")
-	print("AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X")
+	print("AS| Advanced: scale N (40-130, 100 = default) / drop N / names / name X / forget X")
 end
 
 function ArachnaphobiaShield.Slash(msg)
@@ -210,18 +210,18 @@ function ArachnaphobiaShield.Slash(msg)
 		ArachnaphobiaShield.Reset()
 	elseif first == "scale" then
 		-- v0.4.0: cover size as a PERCENTAGE of the plate width (the command
-		-- was /as grow until v0.4.8). 100 = the default; allowed 80-120.
-		-- Stored as a multiplier (0.8-1.2).
+		-- was /as grow until v0.4.8). 100 = the default; allowed 40-130.
+		-- Stored as a multiplier (0.4-1.3).
 		local v = tonumber(string.match(msg or "", "^%s*%S+%s+(%S+)"))
 		if not v then
 			local cur = (type(ArachnaphobiaShieldSettings.trackScale) == "number")
 				and ArachnaphobiaShieldSettings.trackScale or 1.0
-			print(("AS| scale = %d%% (100 = default, allowed 80-120)")
+			print(("AS| scale = %d%% (100 = default, allowed 40-130)")
 				:format(math.floor(cur * 100 + 0.5)))
 			return
 		end
-		if v ~= math.floor(v) or v < 80 or v > 120 then
-			print("AS| scale: expected a whole number 80-120 (100 = default)")
+		if v ~= math.floor(v) or v < 40 or v > 130 then
+			print("AS| scale: expected a whole number 40-130 (100 = default)")
 			return
 		end
 		ArachnaphobiaShieldSettings.trackScale = v / 100
@@ -347,7 +347,7 @@ end
 
 -- Live-state diagnostics: the two lines bare /as used to print AFTER the
 -- version line - enabled/char/driver/corpsePopup/cover, then the tracking
--- mode line. Bound to /as selftest. Throttled so rapid re-queries do not
+-- stats line. Bound to /as selftest. Throttled so rapid re-queries do not
 -- flood chat.
 function ArachnaphobiaShield.Selftest()
 	local now = GetTime()
@@ -368,11 +368,11 @@ function ArachnaphobiaShield.Selftest()
 	-- v0.4.1: report the same units the commands accept (scale %).
 	local scalePct = math.floor((tonumber(s.trackScale) or 1.0) * 100 + 0.5)
 	local nearLabel = ("auto(x%.1f)"):format(tonumber(s.nearBoost) or 2.6)
-	print(("AS| mode=tracking tracked=%d scale=%d%% drop=%s near=%s | covers shown=%d/%d | fallbackSize=%s | limited=%s paused=%s"):format(
+	print(("AS| tracked=%d scale=%d%% drop=%s near=%s | covers shown=%d/%d | limited=%s paused=%s"):format(
 		tracked, scalePct,
 		tostring(s.drop), nearLabel,
 		ArachnaphobiaShield.Cover.ShownCount(), ArachnaphobiaShield.Cover.MAX,
-		tostring(s.coverSize), tostring(ArachnaphobiaShield.coverageLimited == true), tostring(ArachnaphobiaShield.autoSuspended == true)))
+		tostring(ArachnaphobiaShield.coverageLimited == true), tostring(ArachnaphobiaShield.autoSuspended == true)))
 end
 
 -- ----------------------------------------------------------------- driver
