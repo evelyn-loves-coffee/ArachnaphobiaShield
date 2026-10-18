@@ -1,15 +1,15 @@
 -- A brief, click-through notice when an observed spider dies. This does not
 -- position a corpse cover, inspect the combat log, or query pointer input.
-ArachnaphobiaShield = ArachnaphobiaShield or {}
+ArachnophobiaShield = ArachnophobiaShield or {}
 local W = { DURATION = 1.75, RECENT_SECONDS = 3, MAX_RECENT = 80 }
-ArachnaphobiaShield.DeathWarning = W
-local A = ArachnaphobiaShield.Access
+ArachnophobiaShield.DeathWarning = W
+local A = ArachnophobiaShield.Access
 W.byToken, W.byGUID = {}, {}
 W.generation = 0
 
 local function running()
-	return ArachnaphobiaShield.ready and ArachnaphobiaShieldSettings and ArachnaphobiaShieldSettings.enabled
-		and not ArachnaphobiaShield.hidden and not ArachnaphobiaShield.autoSuspended
+	return ArachnophobiaShield.ready and ArachnophobiaShieldSettings and ArachnophobiaShieldSettings.enabled
+		and not ArachnophobiaShield.hidden and not ArachnophobiaShield.autoSuspended
 end
 
 local function now()
@@ -138,7 +138,7 @@ function W.CheckUnit(token)
 		local guid, _, readable = A.Query(UnitGUID, token)
 		if not readable then W.ForgetToken(token, true); return end
 		if guid ~= record.guid then W.ForgetToken(token); return end
-	elseif not ArachnaphobiaShield.Units.IsSpider(token) then
+	elseif not ArachnophobiaShield.Units.IsSpider(token) then
 		W.ForgetToken(token)
 		return
 	end
@@ -162,7 +162,7 @@ function W.OnDeath(guid)
 end
 
 function W.Tick()
-	if not ArachnaphobiaShield.ready or not ArachnaphobiaShieldSettings or not ArachnaphobiaShieldSettings.enabled or ArachnaphobiaShield.hidden then
+	if not ArachnophobiaShield.ready or not ArachnophobiaShieldSettings or not ArachnophobiaShieldSettings.enabled or ArachnophobiaShield.hidden then
 		W.Clear()
 		return
 	end

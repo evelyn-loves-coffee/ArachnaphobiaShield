@@ -36,20 +36,20 @@ Prepare a local square TGA texture in the addon's custom folder, for
 example:
 
 ```text
-<game folder>/Interface/AddOns/ArachnaphobiaShield/Custom/flower.tga
+<game folder>/Interface/AddOns/ArachnophobiaShield/Custom/flower.tga
 ```
 
 Then open the picker, keep the prefilled
-`Interface\AddOns\ArachnaphobiaShield\Custom\` prefix, add the file name
+`Interface\AddOns\ArachnophobiaShield\Custom\` prefix, add the file name
 and click **Use image** (a bare file name without the prefix is
 rejected), or enter:
 
 ```text
-/as cover custom Interface\AddOns\ArachnaphobiaShield\Custom\flower.tga
+/as cover custom Interface\AddOns\ArachnophobiaShield\Custom\flower.tga
 ```
 
 A custom image must live under
-`Interface\AddOns\ArachnaphobiaShield\Custom\` (no `..`, no Windows
+`Interface\AddOns\ArachnophobiaShield\Custom\` (no `..`, no Windows
 drives, no web addresses). The empty `Custom\` folder ships in the
 release zip; its contents are git-ignored and never packaged, so personal
 images stay outside addon updates. When updating, extract the zip over
@@ -62,7 +62,7 @@ anything. To use a PNG or JPEG illustration, convert it first with the
 included local helper:
 
 ```powershell
-uv run --with pillow python tools/import_cover.py "C:\Pictures\flower.png" --output "C:\Games\WoW\Interface\AddOns\ArachnaphobiaShield\Custom\flower.tga"
+uv run --with pillow python tools/import_cover.py "C:\Pictures\flower.png" --output "C:\Games\WoW\Interface\AddOns\ArachnophobiaShield\Custom\flower.tga"
 ```
 
 Replace those example paths with your own. The helper reads the source
@@ -87,8 +87,8 @@ client). A reported texture failure falls back to the fox.
 
 | Symptom | Cause / fix |
 | :-- | :-- |
-| Picker status: *“Image failed to load; showing the fox.”* | The client could not load the file. Check spelling, backslashes and that the file really is a TGA the client can decode. Test a known-good file first (e.g. `Interface\AddOns\ArachnaphobiaShield\cover.tga`). | Dimensions are not powers of 2 (e.g. 800 x 600, 1000 x 1000) | Re-export at 512 x 512 — the import helper does this automatically. |
-| Picker rejects the path with an error | The path must be under `Interface\AddOns\ArachnaphobiaShield\Custom\`, end with `.tga`, contain no `..`, no double backslashes, no control characters, and be ≤ 240 characters. |
+| Picker status: *“Image failed to load; showing the fox.”* | The client could not load the file. Check spelling, backslashes and that the file really is a TGA the client can decode. Test a known-good file first (e.g. `Interface\AddOns\ArachnophobiaShield\cover.tga`). | Dimensions are not powers of 2 (e.g. 800 x 600, 1000 x 1000) | Re-export at 512 x 512 — the import helper does this automatically. |
+| Picker rejects the path with an error | The path must be under `Interface\AddOns\ArachnophobiaShield\Custom\`, end with `.tga`, contain no `..`, no double backslashes, no control characters, and be ≤ 240 characters. |
 | Preview looks right but the in-game cover shows the fox | The texture loaded in the picker but not at cover size/time. Retry after `/reload`; try a smaller 24-bit TGA. |
 | Transparent parts show navy, not the world | Intentional — the navy backing is the minimum coverage floor for custom art. |
 | Image looks cropped / stretched | It is not cropped; non-square images are letterboxed inside the square cover box. Use a square source. |

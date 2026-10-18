@@ -1,4 +1,4 @@
---[[ Arachnaphobia Shield — arachnophobia addon for World of Warcraft Forever.
+--[[ Arachnophobia Shield — arachnophobia addon for World of Warcraft Forever.
 
 Tracking is the only automatic detection mode. Visible accessible spider
 nameplates receive click-through covers without targeting or pointer input.
@@ -18,28 +18,28 @@ Client facts (see docs/HANDOFF.md, verified in-client 2026-10-13):
   * A ~10 Hz C_Timer driver scans nameplates; optional plate events refresh it.
 ]]
 
-ArachnaphobiaShield = ArachnaphobiaShield or {}
-ArachnaphobiaShield.version = "1.1.0"
-local A = ArachnaphobiaShield.Access
+ArachnophobiaShield = ArachnophobiaShield or {}
+ArachnophobiaShield.version = "1.1.0"
+local A = ArachnophobiaShield.Access
 
-ArachnaphobiaShield.hidden = nil  -- panic-hide seam (M4); true hides every cover
-ArachnaphobiaShield.ready = false -- true once a character's covers are restored
+ArachnophobiaShield.hidden = nil  -- panic-hide seam (M4); true hides every cover
+ArachnophobiaShield.ready = false -- true once a character's covers are restored
 
 -- Diagnostic logging (/as debug on). Kept because AS13 was solved from
 -- chat alone; off by default so ordinary play stays quiet.
-ArachnaphobiaShield.debug = false
+ArachnophobiaShield.debug = false
 
 -- M3.5 auto-track state: nameplate token -> cover slot index, plus the reverse
 -- map. Pool indices are RECYCLED, so a bare index is not an identity: both maps
--- are checked before an entry is adopted (see ArachnaphobiaShield.TrackTick).
-ArachnaphobiaShield.track = {}
-ArachnaphobiaShield.trackSlots = {}
+-- are checked before an entry is adopted (see ArachnophobiaShield.TrackTick).
+ArachnophobiaShield.track = {}
+ArachnophobiaShield.trackSlots = {}
 
--- Was ArachnaphobiaShieldSettings already populated when our scripts started running?
+-- Was ArachnophobiaShieldSettings already populated when our scripts started running?
 -- If it was not, this client may apply SavedVariables after addon Lua, and a
 -- restore done at script-load would read empty settings and take the first-run
 -- branch (AS13). Restore then waits for VARIABLES_LOADED.
-ArachnaphobiaShield.loadSnapshot = { settingsPresent = (ArachnaphobiaShieldSettings ~= nil) }
+ArachnophobiaShield.loadSnapshot = { settingsPresent = (ArachnophobiaShieldSettings ~= nil) }
 
 -- ---------------------------------------------------------------- settings
 local DEFAULTS = {
@@ -49,7 +49,7 @@ local DEFAULTS = {
 	-- v0.4.9: default cover is the plain charcoal (was fox). The preset
 	-- ORDER is unchanged (fox, red, blue, sage, charcoal) in the picker,
 	-- the help line and /as cover - only the default value moved.
-	coverStyle = ArachnaphobiaShield.Appearance.DEFAULT_ID,
+	coverStyle = ArachnophobiaShield.Appearance.DEFAULT_ID,
 	customCover = "",
 	-- v0.3.8: opacity retired; covers are always fully opaque (the client
 	-- fades them at distance regardless). Legacy keys are dropped in
@@ -114,8 +114,8 @@ local function freshDefault(v)
 end
 
 local function EnsureSettings()
-	if type(ArachnaphobiaShieldSettings) ~= "table" then ArachnaphobiaShieldSettings = {} end
-	local s = ArachnaphobiaShieldSettings
+	if type(ArachnophobiaShieldSettings) ~= "table" then ArachnophobiaShieldSettings = {} end
+	local s = ArachnophobiaShieldSettings
 	-- Versioned schema: missing or wrong-typed keys get fresh defaults;
 	-- supported preferences are kept.
 	for k, v in pairs(DEFAULTS) do
@@ -133,34 +133,34 @@ local function EnsureSettings()
 	for _, key in ipairs({ "autoTrack", "stickyCovers", "parkCount", "arrange", "covers", "color", "nearThreshold" }) do
 		s[key] = nil
 	end
-	ArachnaphobiaShield.Appearance.Normalize(s)
+	ArachnophobiaShield.Appearance.Normalize(s)
 	s.version = DEFAULTS.version
-	ArachnaphobiaShield.debug = (s.debug == true)
+	ArachnophobiaShield.debug = (s.debug == true)
 end
 EnsureSettings()
 
 -- /as reset: restore the SavedVariables table to factory defaults and apply
 -- them live the way the load path does. Replacing the global table is safe:
--- every consumer reads ArachnaphobiaShieldSettings fresh, and the client saves the table
+-- every consumer reads ArachnophobiaShieldSettings fresh, and the client saves the table
 -- the global references at shutdown.
-function ArachnaphobiaShield.Reset()
+function ArachnophobiaShield.Reset()
 	local s = {}
 	for k, v in pairs(DEFAULTS) do s[k] = freshDefault(v) end
-	ArachnaphobiaShieldSettings = s
-	ArachnaphobiaShield.Appearance.Normalize(s)
-	ArachnaphobiaShield.debug = (s.debug == true)
+	ArachnophobiaShieldSettings = s
+	ArachnophobiaShield.Appearance.Normalize(s)
+	ArachnophobiaShield.debug = (s.debug == true)
 	-- The default is tracking on, so resume exactly like /as enable.
-	ArachnaphobiaShield.DeathWarning.Clear()
-	ArachnaphobiaShield.autoSuspended = false
-	ArachnaphobiaShield.trackFailures = 0
-	ArachnaphobiaShield.tickErrors = 0
-	if ArachnaphobiaShield.ready then
-		ArachnaphobiaShield.ClearTrack()
-		ArachnaphobiaShield.Cover.Init()
-		ArachnaphobiaShield.Cover.ApplyStyle()
-		ArachnaphobiaShield.Refresh()
+	ArachnophobiaShield.DeathWarning.Clear()
+	ArachnophobiaShield.autoSuspended = false
+	ArachnophobiaShield.trackFailures = 0
+	ArachnophobiaShield.tickErrors = 0
+	if ArachnophobiaShield.ready then
+		ArachnophobiaShield.ClearTrack()
+		ArachnophobiaShield.Cover.Init()
+		ArachnophobiaShield.Cover.ApplyStyle()
+		ArachnophobiaShield.Refresh()
 	end
-	if ArachnaphobiaShield.Config and ArachnaphobiaShield.Config.frame then ArachnaphobiaShield.Config.Refresh() end
+	if ArachnophobiaShield.Config and ArachnophobiaShield.Config.frame then ArachnophobiaShield.Config.Refresh() end
 	print("AS| settings restored to defaults - tracking on, charcoal cover")
 end
 
@@ -170,53 +170,53 @@ _G.SLASH_AS1 = "/as"
 -- Usage text for /as help (and bare /as). No '|' chars in chat text: the WoW
 -- chat filter eats chat-control sequences like |t / |h (AS11) - use ' / '
 -- separators.
-function ArachnaphobiaShield.Help()
+function ArachnophobiaShield.Help()
 	print("AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>")
 	print("AS| Advanced: scale N (40-130, 100 = default) / drop N / names / name X / forget X")
 end
 
-function ArachnaphobiaShield.Slash(msg)
+function ArachnophobiaShield.Slash(msg)
 	local first = string.match(msg or "", "^%s*(%S+)") or ""
 	if first == "" then
 		-- Standard convention: a bare command shows usage. Mirror /as help.
-		ArachnaphobiaShield.Help()
+		ArachnophobiaShield.Help()
 	elseif first == "config" or first == "options" then
-		ArachnaphobiaShield.Config.Open()
+		ArachnophobiaShield.Config.Open()
 	elseif first == "cover" then
-		ArachnaphobiaShield.Appearance.Command((msg or ""):match("^%s*%S+%s*(.-)%s*$"))
+		ArachnophobiaShield.Appearance.Command((msg or ""):match("^%s*%S+%s*(.-)%s*$"))
 	elseif first == "on" or first == "enable" then
-		ArachnaphobiaShield.DeathWarning.Clear()
-		ArachnaphobiaShieldSettings.enabled = true
-		ArachnaphobiaShield.autoSuspended = false
-		ArachnaphobiaShield.trackFailures = 0
-		ArachnaphobiaShield.tickErrors = 0
-		if ArachnaphobiaShield.ready then
-			ArachnaphobiaShield.ClearTrack()
-			ArachnaphobiaShield.Cover.Init()
-			ArachnaphobiaShield.Cover.ApplyStyle()
-			ArachnaphobiaShield.Refresh()
+		ArachnophobiaShield.DeathWarning.Clear()
+		ArachnophobiaShieldSettings.enabled = true
+		ArachnophobiaShield.autoSuspended = false
+		ArachnophobiaShield.trackFailures = 0
+		ArachnophobiaShield.tickErrors = 0
+		if ArachnophobiaShield.ready then
+			ArachnophobiaShield.ClearTrack()
+			ArachnophobiaShield.Cover.Init()
+			ArachnophobiaShield.Cover.ApplyStyle()
+			ArachnophobiaShield.Refresh()
 		end
 		print("AS| enabled - tracking visible spider nameplates")
 	elseif first == "off" or first == "disable" then
-		ArachnaphobiaShield.DeathWarning.Clear()
-		ArachnaphobiaShieldSettings.enabled = false
-		if ArachnaphobiaShield.ready then
-			ArachnaphobiaShield.ClearTrack()
-			ArachnaphobiaShield.Cover.HideAll()
+		ArachnophobiaShield.DeathWarning.Clear()
+		ArachnophobiaShieldSettings.enabled = false
+		if ArachnophobiaShield.ready then
+			ArachnophobiaShield.ClearTrack()
+			ArachnophobiaShield.Cover.HideAll()
 		end
 		print("AS| disabled - all covers hidden (/as enable restores tracking)")
 	elseif first == "toggle" then
-		ArachnaphobiaShield.Slash(ArachnaphobiaShieldSettings.enabled and "disable" or "enable")
+		ArachnophobiaShield.Slash(ArachnophobiaShieldSettings.enabled and "disable" or "enable")
 	elseif first == "reset" then
-		ArachnaphobiaShield.Reset()
+		ArachnophobiaShield.Reset()
 	elseif first == "scale" then
 		-- v0.4.0: cover size as a PERCENTAGE of the plate width (the command
 		-- was /as grow until v0.4.8). 100 = the default; allowed 40-130.
 		-- Stored as a multiplier (0.4-1.3).
 		local v = tonumber(string.match(msg or "", "^%s*%S+%s+(%S+)"))
 		if not v then
-			local cur = (type(ArachnaphobiaShieldSettings.trackScale) == "number")
-				and ArachnaphobiaShieldSettings.trackScale or 1.0
+			local cur = (type(ArachnophobiaShieldSettings.trackScale) == "number")
+				and ArachnophobiaShieldSettings.trackScale or 1.0
 			print(("AS| scale = %d%% (100 = default, allowed 40-130)")
 				:format(math.floor(cur * 100 + 0.5)))
 			return
@@ -225,7 +225,7 @@ function ArachnaphobiaShield.Slash(msg)
 			print("AS| scale: expected a whole number 40-130 (100 = default)")
 			return
 		end
-		ArachnaphobiaShieldSettings.trackScale = v / 100
+		ArachnophobiaShieldSettings.trackScale = v / 100
 		print(("AS| scale = %d%%"):format(v))
 	elseif first == "drop" then
 		-- drop = how far below the plate the cover is centred (models hang
@@ -233,11 +233,11 @@ function ArachnaphobiaShield.Slash(msg)
 		local v = tonumber(string.match(msg or "", "^%s*%S+%s+(%S+)"))
 		if not v then
 			print(("AS| drop = %s (set with: /as drop N)"):format(
-				tostring(ArachnaphobiaShieldSettings.drop)))
+				tostring(ArachnophobiaShieldSettings.drop)))
 			return
 		end
 		if v < 0 then v = 0 elseif v > 4 then v = 4 end
-		ArachnaphobiaShieldSettings.drop = v
+		ArachnophobiaShieldSettings.drop = v
 		print(("AS| drop = %.2f"):format(v))
 	elseif first == "near" then
 		-- v0.4.1: the boost is computed automatically every tick from the
@@ -246,9 +246,9 @@ function ArachnaphobiaShield.Slash(msg)
 		print("AS| near: the boost is automatic now (it ramps with apparent width - watch the 'AS| near:' line via /as debug on); there is no setting to change")
 	elseif first == "debug" then
 		local a = string.match(msg or "", "^%s*debug%s+(%S+)") or ""
-		if a == "on" or a == "off" then ArachnaphobiaShieldSettings.debug = (a == "on") end
-		ArachnaphobiaShield.debug = (ArachnaphobiaShieldSettings.debug == true)
-		print("AS| debug logging " .. (ArachnaphobiaShield.debug and "on" or "off"))
+		if a == "on" or a == "off" then ArachnophobiaShieldSettings.debug = (a == "on") end
+		ArachnophobiaShield.debug = (ArachnophobiaShieldSettings.debug == true)
+		print("AS| debug logging " .. (ArachnophobiaShield.debug and "on" or "off"))
 	elseif first == "name" then
 		-- Owner escape hatch: see a spider that is not covered, name it, done.
 		-- EXACT names only (extraNames) — a loose fragment could blanket half a
@@ -257,7 +257,7 @@ function ArachnaphobiaShield.Slash(msg)
 		if not name or name == "" then
 			print("AS| usage: /as name <exact creature name>  (list them with /as names)")
 		else
-			local list = (type(ArachnaphobiaShieldSettings.extraNames) == "table") and ArachnaphobiaShieldSettings.extraNames or {}
+			local list = (type(ArachnophobiaShieldSettings.extraNames) == "table") and ArachnophobiaShieldSettings.extraNames or {}
 			local dup
 			for idx, existing in ipairs(list) do
 				if type(existing) == "string" and existing:lower() == name:lower() then dup = idx end
@@ -268,13 +268,13 @@ function ArachnaphobiaShield.Slash(msg)
 				print("AS| extra-name list is full (64) - remove one with /as forget <name>")
 			else
 				list[#list + 1] = name
-				ArachnaphobiaShieldSettings.extraNames = list
+				ArachnophobiaShieldSettings.extraNames = list
 				print(("AS| will cover '%s' from now on (%d extra) - undo with /as forget %s")
 					:format(name, #list, name))
 			end
 		end
 	elseif first == "names" then
-		local list = (type(ArachnaphobiaShieldSettings.extraNames) == "table") and ArachnaphobiaShieldSettings.extraNames or {}
+		local list = (type(ArachnophobiaShieldSettings.extraNames) == "table") and ArachnophobiaShieldSettings.extraNames or {}
 		if #list == 0 then
 			print("AS| no extra names yet - add one with /as name <exact creature name>")
 		else
@@ -293,7 +293,7 @@ function ArachnaphobiaShield.Slash(msg)
 		end
 	elseif first == "forget" then
 		local name = (msg or ""):match("^%s*%S+%s*(.-)%s*$")
-		local list = (type(ArachnaphobiaShieldSettings.extraNames) == "table") and ArachnaphobiaShieldSettings.extraNames or {}
+		local list = (type(ArachnophobiaShieldSettings.extraNames) == "table") and ArachnophobiaShieldSettings.extraNames or {}
 		if not name or name == "" then
 			print("AS| usage: /as forget <name>")
 		else
@@ -305,24 +305,24 @@ function ArachnaphobiaShield.Slash(msg)
 					kept[#kept + 1] = existing
 				end
 			end
-			ArachnaphobiaShieldSettings.extraNames = kept
+			ArachnophobiaShieldSettings.extraNames = kept
 			print(removed > 0
 				and (("AS| forgot '%s' (%d extra names left)"):format(name, #kept))
 				or  (("AS| '%s' was not on your extra-name list (%d)"):format(name, #kept)))
 		end
 	elseif first == "version" then
-		print(ArachnaphobiaShield.VersionLine())
+		print(ArachnophobiaShield.VersionLine())
 	elseif first == "selftest" then
-		ArachnaphobiaShield.Selftest()
+		ArachnophobiaShield.Selftest()
 	elseif first == "help" then
-		ArachnaphobiaShield.Help()
+		ArachnophobiaShield.Help()
 	else
 		print(("AS| unknown subcommand '%s' - /as help for usage"):format(first))
 	end
 end
 
 SlashCmdList["AS"] = function(m)
-	ArachnaphobiaShield.Slash(m)
+	ArachnophobiaShield.Slash(m)
 end
 
 -- ---------------------------------------------------------------- selftest
@@ -331,7 +331,7 @@ local lastSelftest = 0
 -- First diagnostic line: the addon version plus the client's build, interface
 -- and Lua versions. Returned (not printed) so /as version and any other
 -- caller can reuse it.
-function ArachnaphobiaShield.VersionLine()
+function ArachnophobiaShield.VersionLine()
 	-- AS2 (see docs/HANDOFF.md): GetBuildInfo returns FOUR values on this
 	-- client - "1.60.1", "70374", "Oct 12 2026", "16001" - i.e. build string,
 	-- build number, build date, interface version. Not major/minor/patch.
@@ -342,7 +342,7 @@ function ArachnaphobiaShield.VersionLine()
 	local lua = (type(_VERSION) == "string" and _VERSION or "Lua 5.1")
 	lua = "Lua " .. ((lua:gsub("^%s*Lua%s+", "")))
 	return ("AS| v%s | WoW %s build %s (%s) | interface %s | %s"):format(
-		ArachnaphobiaShield.version, tostring(build), tostring(buildNo), tostring(buildDate),
+		ArachnophobiaShield.version, tostring(build), tostring(buildNo), tostring(buildDate),
 		tostring(iface), lua)
 end
 
@@ -350,20 +350,20 @@ end
 -- version line - enabled/char/driver/corpsePopup/cover, then the tracking
 -- stats line. Bound to /as selftest. Throttled so rapid re-queries do not
 -- flood chat.
-function ArachnaphobiaShield.Selftest()
+function ArachnophobiaShield.Selftest()
 	local now = GetTime()
 	if now - lastSelftest < 0.25 then return end
 	lastSelftest = now
-	local s = ArachnaphobiaShieldSettings
-	local warning = ArachnaphobiaShield.DeathWarning
+	local s = ArachnophobiaShieldSettings
+	local warning = ArachnophobiaShield.DeathWarning
 	local popupState = warning.popupUnavailable and "unavailable" or (warning.expires and "active" or "idle")
 	print(("AS| enabled=%s | char=%s | driver=%s | corpsePopup=%s | cover=%s"):format(
-		tostring(s.enabled), tostring(ArachnaphobiaShield.char),
-		tostring(ArachnaphobiaShield.driverOn), popupState, ArachnaphobiaShield.Appearance.Current().id))
+		tostring(s.enabled), tostring(ArachnophobiaShield.char),
+		tostring(ArachnophobiaShield.driverOn), popupState, ArachnophobiaShield.Appearance.Current().id))
 	local tracked = 0
-	if type(ArachnaphobiaShield.track) == "table" then
-		for _, slot in pairs(ArachnaphobiaShield.track) do
-			if ArachnaphobiaShield.Cover.IsAllocated(slot) then tracked = tracked + 1 end
+	if type(ArachnophobiaShield.track) == "table" then
+		for _, slot in pairs(ArachnophobiaShield.track) do
+			if ArachnophobiaShield.Cover.IsAllocated(slot) then tracked = tracked + 1 end
 		end
 	end
 	-- v0.4.1: report the same units the commands accept (scale %).
@@ -372,8 +372,8 @@ function ArachnaphobiaShield.Selftest()
 	print(("AS| tracked=%d scale=%d%% drop=%s near=%s | covers shown=%d/%d | limited=%s paused=%s"):format(
 		tracked, scalePct,
 		tostring(s.drop), nearLabel,
-		ArachnaphobiaShield.Cover.ShownCount(), ArachnaphobiaShield.Cover.MAX,
-		tostring(ArachnaphobiaShield.coverageLimited == true), tostring(ArachnaphobiaShield.autoSuspended == true)))
+		ArachnophobiaShield.Cover.ShownCount(), ArachnophobiaShield.Cover.MAX,
+		tostring(ArachnophobiaShield.coverageLimited == true), tostring(ArachnophobiaShield.autoSuspended == true)))
 end
 
 -- ----------------------------------------------------------------- driver
@@ -383,55 +383,55 @@ end
 -- function stays identical (PLAN §3.4).
 local tickInterval = 0.1
 
-function ArachnaphobiaShield.Tick()
+function ArachnophobiaShield.Tick()
 	-- Reschedule FIRST so a one-frame Update error can never kill the
 	-- driver; the error is surfaced in chat instead of dying silently.
 	if C_Timer and C_Timer.After then
-		C_Timer.After(tickInterval, ArachnaphobiaShield.Tick)
+		C_Timer.After(tickInterval, ArachnophobiaShield.Tick)
 	end
 	-- Expiration/cleanup must still run while tracking is disabled or paused.
-	local warningOK = pcall(ArachnaphobiaShield.DeathWarning.Tick)
-	if not warningOK then ArachnaphobiaShield.DeathWarning.Clear() end
-	if ArachnaphobiaShield.ready and ArachnaphobiaShieldSettings.enabled and not ArachnaphobiaShield.hidden then
-		ArachnaphobiaShield.Refresh()
+	local warningOK = pcall(ArachnophobiaShield.DeathWarning.Tick)
+	if not warningOK then ArachnophobiaShield.DeathWarning.Clear() end
+	if ArachnophobiaShield.ready and ArachnophobiaShieldSettings.enabled and not ArachnophobiaShield.hidden then
+		ArachnophobiaShield.Refresh()
 	end
 end
 
-function ArachnaphobiaShield.Refresh()
-	if not ArachnaphobiaShield.ready or not ArachnaphobiaShieldSettings.enabled or ArachnaphobiaShield.hidden then return end
-	local ok, err = pcall(ArachnaphobiaShield.Update)
+function ArachnophobiaShield.Refresh()
+	if not ArachnophobiaShield.ready or not ArachnophobiaShieldSettings.enabled or ArachnophobiaShield.hidden then return end
+	local ok, err = pcall(ArachnophobiaShield.Update)
 	if not ok then
-		ArachnaphobiaShield.coverageLimited = true
-		ArachnaphobiaShield.tickErrors = (ArachnaphobiaShield.tickErrors or 0) + 1
-		if ArachnaphobiaShield.tickErrors <= 3 then
+		ArachnophobiaShield.coverageLimited = true
+		ArachnophobiaShield.tickErrors = (ArachnophobiaShield.tickErrors or 0) + 1
+		if ArachnophobiaShield.tickErrors <= 3 then
 			print("AS| tick error: " .. tostring(err))
-		elseif ArachnaphobiaShield.tickErrors == 4 then
+		elseif ArachnophobiaShield.tickErrors == 4 then
 			-- Stop rather than trying another automatic detection channel.
-			ArachnaphobiaShield.autoSuspended = true
-			ArachnaphobiaShield.ClearTrack()
+			ArachnophobiaShield.autoSuspended = true
+			ArachnophobiaShield.ClearTrack()
 			print("AS| automatic covers paused after errors; coverage limited (/as enable to retry)")
 		end
 	else
-		ArachnaphobiaShield.tickErrors = 0
+		ArachnophobiaShield.tickErrors = 0
 	end
 end
 
-function ArachnaphobiaShield.StartDriver()
-	if ArachnaphobiaShield.driverOn then return end
+function ArachnophobiaShield.StartDriver()
+	if ArachnophobiaShield.driverOn then return end
 	if not (C_Timer and C_Timer.After) then
 		print("AS| ERROR: C_Timer.After missing - tick driver cannot start (run AS7, PLAN §12.10)")
 		return
 	end
-	ArachnaphobiaShield.driverOn = true
-	C_Timer.After(tickInterval, ArachnaphobiaShield.Tick)
+	ArachnophobiaShield.driverOn = true
+	C_Timer.After(tickInterval, ArachnophobiaShield.Tick)
 end
 
 -- Scan accessible native nameplates. Covers never handle pointer input.
-function ArachnaphobiaShield.Update()
-	if not ArachnaphobiaShield.ready or not ArachnaphobiaShieldSettings.enabled or ArachnaphobiaShield.hidden then return end
-	ArachnaphobiaShield.coverageLimited = ArachnaphobiaShield.autoSuspended == true
-	ArachnaphobiaShield.Cover.RetryReleases()
-	if not ArachnaphobiaShield.autoSuspended then ArachnaphobiaShield.TrackTick() end
+function ArachnophobiaShield.Update()
+	if not ArachnophobiaShield.ready or not ArachnophobiaShieldSettings.enabled or ArachnophobiaShield.hidden then return end
+	ArachnophobiaShield.coverageLimited = ArachnophobiaShield.autoSuspended == true
+	ArachnophobiaShield.Cover.RetryReleases()
+	if not ArachnophobiaShield.autoSuspended then ArachnophobiaShield.TrackTick() end
 end
 
 -- ------------------------------------------------------------ auto-track (M3.5)
@@ -488,7 +488,7 @@ local function plateShown(plate)
 	return ok and shown == true
 end
 
-function ArachnaphobiaShield.PlateFrameFor(token, idx)
+function ArachnophobiaShield.PlateFrameFor(token, idx)
 	if C_NamePlate and C_NamePlate.GetNamePlateForUnit then
 		local f, _, ok = A.Query(C_NamePlate.GetNamePlateForUnit, token)
 		-- A successful nil means there is NO plate, not permission to adopt a
@@ -551,7 +551,7 @@ local function nearBoostFor(apparent, ceiling)
 	return 1 + (b - 1) * x
 end
 
-function ArachnaphobiaShield.OurScale()
+function ArachnophobiaShield.OurScale()
 	local ou = 1
 	if UIParent and type(UIParent.GetEffectiveScale) == "function" then
 		local v = A.Query(UIParent.GetEffectiveScale, UIParent)
@@ -561,50 +561,50 @@ function ArachnaphobiaShield.OurScale()
 end
 
 local function bindTrack(token, slot)
-	ArachnaphobiaShield.track[token] = slot
-	if slot ~= nil then ArachnaphobiaShield.trackSlots[slot] = token end
+	ArachnophobiaShield.track[token] = slot
+	if slot ~= nil then ArachnophobiaShield.trackSlots[slot] = token end
 end
 
 local function dropTrack(token)
-	local slot = ArachnaphobiaShield.track[token]
-	if slot ~= nil and ArachnaphobiaShield.trackSlots[slot] == token then
-		ArachnaphobiaShield.trackSlots[slot] = nil
+	local slot = ArachnophobiaShield.track[token]
+	if slot ~= nil and ArachnophobiaShield.trackSlots[slot] == token then
+		ArachnophobiaShield.trackSlots[slot] = nil
 	end
-	ArachnaphobiaShield.track[token] = nil
+	ArachnophobiaShield.track[token] = nil
 end
 
 -- Cover calls this when it sacrifices a slot to make room: an entry that points
 -- at a slot we no longer own has to go, otherwise the next tick adopts whatever
 -- unit now owns that index.
-if ArachnaphobiaShield.Cover then
-	ArachnaphobiaShield.Cover.onEvict = function(slot)
-		local token = ArachnaphobiaShield.trackSlots and ArachnaphobiaShield.trackSlots[slot]
+if ArachnophobiaShield.Cover then
+	ArachnophobiaShield.Cover.onEvict = function(slot)
+		local token = ArachnophobiaShield.trackSlots and ArachnophobiaShield.trackSlots[slot]
 		if token ~= nil then
-			ArachnaphobiaShield.trackSlots[slot] = nil
-			if ArachnaphobiaShield.track[token] == slot then ArachnaphobiaShield.track[token] = nil end
+			ArachnophobiaShield.trackSlots[slot] = nil
+			if ArachnophobiaShield.track[token] == slot then ArachnophobiaShield.track[token] = nil end
 		end
 	end
 end
 
 -- Release the entire nameplate-only pool, including deferred/orphaned slots.
-function ArachnaphobiaShield.ClearTrack()
-	ArachnaphobiaShield.Cover.ClearAll()
-	ArachnaphobiaShield.track, ArachnaphobiaShield.trackSlots = {}, {}
+function ArachnophobiaShield.ClearTrack()
+	ArachnophobiaShield.Cover.ClearAll()
+	ArachnophobiaShield.track, ArachnophobiaShield.trackSlots = {}, {}
 end
 
-function ArachnaphobiaShield.TrackTick()
-	if ArachnaphobiaShield.autoSuspended or not ArachnaphobiaShieldSettings.enabled or ArachnaphobiaShield.hidden then return end
-	local C, U = ArachnaphobiaShield.Cover, ArachnaphobiaShield.Units
-	local s = ArachnaphobiaShieldSettings
-	local t = ArachnaphobiaShield.track
+function ArachnophobiaShield.TrackTick()
+	if ArachnophobiaShield.autoSuspended or not ArachnophobiaShieldSettings.enabled or ArachnophobiaShield.hidden then return end
+	local C, U = ArachnophobiaShield.Cover, ArachnophobiaShield.Units
+	local s = ArachnophobiaShieldSettings
+	local t = ArachnophobiaShield.track
 	local scale = tonumber(s.trackScale) or 1.0
 	local dropK = tonumber(s.drop) or 0.5
 	local nearB = tonumber(s.nearBoost) or 2.6
 	local grace = math.max(1, math.floor(((tonumber(s.trackRelease) or 0.5)
 		/ tickInterval) + 0.5))
-	local ourScale = ArachnaphobiaShield.OurScale()
+	local ourScale = ArachnophobiaShield.OurScale()
 	local live = {}
-	local nearDbg = ArachnaphobiaShield.debug and {} or nil
+	local nearDbg = ArachnophobiaShield.debug and {} or nil
 
 	for i = 1, MAX_PLATES_SCAN do
 		local token = "nameplate" .. i
@@ -614,15 +614,15 @@ function ArachnaphobiaShield.TrackTick()
 			and (not UnitIsVisible or A.Query(UnitIsVisible, token) == true) then
 			local isSpider = U.IsSpider(token)
 			if isSpider then
-				ArachnaphobiaShield.DeathWarning.Observe(token)
-				local plate = ArachnaphobiaShield.PlateFrameFor(token, i)
+				ArachnophobiaShield.DeathWarning.Observe(token)
+				local plate = ArachnophobiaShield.PlateFrameFor(token, i)
 				local slot = t[token]
 				if plate then
 					live[token] = true
 					-- Adopt an entry only if its allocation and reverse map agree:
 					-- pool indices are recycled between different units.
 					if slot == nil or not C.IsAllocated(slot)
-						or ArachnaphobiaShield.trackSlots[slot] ~= token then
+						or ArachnophobiaShield.trackSlots[slot] ~= token then
 						slot = C.Allocate()
 						if slot ~= nil then
 							bindTrack(token, slot)
@@ -648,15 +648,15 @@ function ArachnaphobiaShield.TrackTick()
 							-- Release the slot; do not leave an orphaned screen cover.
 							C.Release(slot)
 							dropTrack(token)
-							ArachnaphobiaShield.trackFailures = (ArachnaphobiaShield.trackFailures or 0) + 1
-							if ArachnaphobiaShield.trackFailures == 20 then
-								ArachnaphobiaShield.autoSuspended = true
+							ArachnophobiaShield.trackFailures = (ArachnophobiaShield.trackFailures or 0) + 1
+							if ArachnophobiaShield.trackFailures == 20 then
+								ArachnophobiaShield.autoSuspended = true
 								print("AS| the client would not anchor covers - automatic covers paused; coverage limited (/as enable to retry)")
 							end
 						end
 					end
 				else
-					ArachnaphobiaShield.coverageLimited = true
+					ArachnophobiaShield.coverageLimited = true
 				end
 			end
 		end
@@ -667,8 +667,8 @@ function ArachnaphobiaShield.TrackTick()
 	-- the near ramp.
 	if nearDbg and #nearDbg > 0 then
 		local now = GetTime()
-		if now - (ArachnaphobiaShield.nearDbgAt or 0) >= 1 then
-			ArachnaphobiaShield.nearDbgAt = now
+		if now - (ArachnophobiaShield.nearDbgAt or 0) >= 1 then
+			ArachnophobiaShield.nearDbgAt = now
 			table.sort(nearDbg)
 			print("AS| near: " .. table.concat(nearDbg, " "))
 		end
@@ -703,44 +703,44 @@ end
 -- ---------------------------------------------------------------- lifecycle
 -- Wait for a character and its actual SavedVariables before applying the
 -- settings migration. This client may supply them after addon script load.
-function ArachnaphobiaShield.OnEnterWorld()
-	if ArachnaphobiaShield.ready then return true end
-	if not ArachnaphobiaShield.loadSnapshot.settingsPresent and not ArachnaphobiaShield.sawVariablesLoaded then
+function ArachnophobiaShield.OnEnterWorld()
+	if ArachnophobiaShield.ready then return true end
+	if not ArachnophobiaShield.loadSnapshot.settingsPresent and not ArachnophobiaShield.sawVariablesLoaded then
 		return false
 	end
 	EnsureSettings() -- also migrate SavedVariables applied after script load
 	local char = UnitName and UnitName("player")
 	if not char then return false end -- still at character select
-	ArachnaphobiaShield.char = char
-	ArachnaphobiaShield.ready = true
-	ArachnaphobiaShield.DeathWarning.Clear()
+	ArachnophobiaShield.char = char
+	ArachnophobiaShield.ready = true
+	ArachnophobiaShield.DeathWarning.Clear()
 	-- Every cover is rebuilt from live nameplates; none are restored from disk.
-	ArachnaphobiaShield.track = {}
-	ArachnaphobiaShield.trackSlots = {}
-	ArachnaphobiaShield.trackFailures = 0
-	ArachnaphobiaShield.autoSuspended = false
-	ArachnaphobiaShield.tickErrors = 0
-	ArachnaphobiaShield.Cover.Init()
-	ArachnaphobiaShield.Cover.ClearAll()
-	ArachnaphobiaShield.Cover.ApplyStyle()
-	ArachnaphobiaShield.StartDriver()
+	ArachnophobiaShield.track = {}
+	ArachnophobiaShield.trackSlots = {}
+	ArachnophobiaShield.trackFailures = 0
+	ArachnophobiaShield.autoSuspended = false
+	ArachnophobiaShield.tickErrors = 0
+	ArachnophobiaShield.Cover.Init()
+	ArachnophobiaShield.Cover.ClearAll()
+	ArachnophobiaShield.Cover.ApplyStyle()
+	ArachnophobiaShield.StartDriver()
 	return true
 end
 
 -- Restore when we can, otherwise ask again for ~10 s (C_Timer.After is proven
 -- present; the no-op in the offline harness makes the retry inert there).
-function ArachnaphobiaShield.RetryEnterWorld()
-	if ArachnaphobiaShield.ready then return end
-	if ArachnaphobiaShield.OnEnterWorld() then return end
-	ArachnaphobiaShield.retries = (ArachnaphobiaShield.retries or 0) + 1
-	if ArachnaphobiaShield.retries >= 20 then return end
+function ArachnophobiaShield.RetryEnterWorld()
+	if ArachnophobiaShield.ready then return end
+	if ArachnophobiaShield.OnEnterWorld() then return end
+	ArachnophobiaShield.retries = (ArachnophobiaShield.retries or 0) + 1
+	if ArachnophobiaShield.retries >= 20 then return end
 	if C_Timer and C_Timer.After then
-		C_Timer.After(0.5, ArachnaphobiaShield.RetryEnterWorld)
+		C_Timer.After(0.5, ArachnophobiaShield.RetryEnterWorld)
 	end
 end
 
 local function EnsureEventFrame()
-	if ArachnaphobiaShield.eventFrame then return end
+	if ArachnophobiaShield.eventFrame then return end
 	local f = CreateFrame("Frame")
 	-- AS6-confirmed events only (RegisterEvent errors on unknown names)
 	f:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -767,35 +767,35 @@ local function EnsureEventFrame()
 		local ev = evt or event
 		local payload = readablePayload(unitArg, arg1)
 		if ev == "VARIABLES_LOADED" then
-			ArachnaphobiaShield.sawVariablesLoaded = true
-			ArachnaphobiaShield.RetryEnterWorld()
+			ArachnophobiaShield.sawVariablesLoaded = true
+			ArachnophobiaShield.RetryEnterWorld()
 		elseif ev == "PLAYER_ENTERING_WORLD" then
-			ArachnaphobiaShield.DeathWarning.Clear()
-			ArachnaphobiaShield.RetryEnterWorld()
+			ArachnophobiaShield.DeathWarning.Clear()
+			ArachnophobiaShield.RetryEnterWorld()
 		elseif ev == "NAME_PLATE_UNIT_REMOVED" then
 			local unit = payload
 			if A.CanRead(unit) and type(unit) == "string" then
-				ArachnaphobiaShield.DeathWarning.CheckUnit(unit)
-				ArachnaphobiaShield.DeathWarning.ForgetToken(unit)
-				local slot = ArachnaphobiaShield.track[unit]
-				if slot then ArachnaphobiaShield.Cover.Release(slot); dropTrack(unit) end
+				ArachnophobiaShield.DeathWarning.CheckUnit(unit)
+				ArachnophobiaShield.DeathWarning.ForgetToken(unit)
+				local slot = ArachnophobiaShield.track[unit]
+				if slot then ArachnophobiaShield.Cover.Release(slot); dropTrack(unit) end
 			end
-		elseif ev == "NAME_PLATE_UNIT_ADDED" and ArachnaphobiaShield.ready
-			and ArachnaphobiaShieldSettings.enabled and not ArachnaphobiaShield.hidden then
-			ArachnaphobiaShield.Refresh()
+		elseif ev == "NAME_PLATE_UNIT_ADDED" and ArachnophobiaShield.ready
+			and ArachnophobiaShieldSettings.enabled and not ArachnophobiaShield.hidden then
+			ArachnophobiaShield.Refresh()
 		elseif ev == "UNIT_HEALTH" or ev == "UNIT_FLAGS" then
-			ArachnaphobiaShield.DeathWarning.CheckUnit(payload)
+			ArachnophobiaShield.DeathWarning.CheckUnit(payload)
 		elseif ev == "UNIT_DIED" then
-			ArachnaphobiaShield.DeathWarning.OnDeath(payload)
+			ArachnophobiaShield.DeathWarning.OnDeath(payload)
 		end
 	end)
-	ArachnaphobiaShield.eventFrame = f
+	ArachnophobiaShield.eventFrame = f
 end
 EnsureEventFrame()
 
 -- If we load already in-world (e.g. /reload in character) AND the settings
 -- were already applied at script load, enter now. Otherwise PLAYER_ENTERING_WORLD
 -- and VARIABLES_LOADED above cover it, ensuring migration sees the real save.
-if UnitName and UnitName("player") and ArachnaphobiaShield.loadSnapshot.settingsPresent then
-	ArachnaphobiaShield.OnEnterWorld()
+if UnitName and UnitName("player") and ArachnophobiaShield.loadSnapshot.settingsPresent then
+	ArachnophobiaShield.OnEnterWorld()
 end

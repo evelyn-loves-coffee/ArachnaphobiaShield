@@ -1,13 +1,13 @@
 -- Cover choices are data, so additional supplied artwork needs no new UI logic.
-ArachnaphobiaShield = ArachnaphobiaShield or {}
+ArachnophobiaShield = ArachnophobiaShield or {}
 local P = {}
-ArachnaphobiaShield.Appearance = P
-local ROOT = "Interface\\AddOns\\ArachnaphobiaShield\\"
+ArachnophobiaShield.Appearance = P
+local ROOT = "Interface\\AddOns\\ArachnophobiaShield\\"
 -- Custom artwork lives in the addon's own Custom folder. The empty folder
 -- ships in the release zip (fresh installs get it); its contents are
 -- git-ignored and never packaged (tools/package_addon.py ships an explicit
 -- file list), so personal images stay out of releases.
-P.CUSTOM_ROOT = "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\"
+P.CUSTOM_ROOT = "Interface\\AddOns\\ArachnophobiaShield\\Custom\\"
 -- v0.4.9: the default cover is the plain charcoal (was fox). This is the
 -- single source of truth for the default; Core.lua's DEFAULTS references it.
 -- The preset ORDER (fox, red, blue, sage, charcoal) is unchanged in the
@@ -32,12 +32,12 @@ end
 -- Only the addon's own Custom folder is accepted, so the documented path and
 -- the validated path are the same place.
 function P.CustomPath(value)
-	if not ArachnaphobiaShield.Access.CanRead(value) or type(value) ~= "string" then return nil end
+	if not ArachnophobiaShield.Access.CanRead(value) or type(value) ~= "string" then return nil end
 	local path = value:match("^%s*(.-)%s*$"):gsub("/", "\\")
 	if path:sub(1, 1) == '"' and path:sub(-1) == '"' then path = path:sub(2, -2) end
 	if #path > 240 or path:find("[%c:]") or path:find("..", 1, true) then return nil end
 	if path:find("\\\\", 1, true) then return nil end
-	if not path:lower():match("^interface\\addons\\arachnaphobiashield\\custom\\.+%.tga$") then return nil end
+	if not path:lower():match("^interface\\addons\\arachnophobiashield\\custom\\.+%.tga$") then return nil end
 	return path
 end
 
@@ -54,7 +54,7 @@ function P.Normalize(settings)
 end
 
 function P.Current()
-	local s = ArachnaphobiaShieldSettings or {}
+	local s = ArachnophobiaShieldSettings or {}
 	if s.coverStyle == "custom" then
 		local path = P.CustomPath(s.customCover)
 		if path then return { id = "custom", label = "Custom image", path = path } end
@@ -66,18 +66,18 @@ function P.Select(id, customPath)
 	id = type(id) == "string" and id:lower() or ""
 	local path
 	if id == "custom" then
-		path = P.CustomPath(customPath or (ArachnaphobiaShieldSettings or {}).customCover)
+		path = P.CustomPath(customPath or (ArachnophobiaShieldSettings or {}).customCover)
 		if not path then
 			return false, "Rejected: use a local .tga path under the addon's Custom folder (hint above the field)."
 		end
 	elseif not P.Find(id) then
 		return false, "Choose fox / red / blue / sage / charcoal / custom"
 	end
-	ArachnaphobiaShieldSettings = ArachnaphobiaShieldSettings or {}
-	ArachnaphobiaShieldSettings.coverStyle = id
-	if path then ArachnaphobiaShieldSettings.customCover = path end
-	if ArachnaphobiaShield.Cover and ArachnaphobiaShield.Cover.inited then ArachnaphobiaShield.Cover.ApplyStyle() end
-	if ArachnaphobiaShield.Config then ArachnaphobiaShield.Config.Refresh() end
+	ArachnophobiaShieldSettings = ArachnophobiaShieldSettings or {}
+	ArachnophobiaShieldSettings.coverStyle = id
+	if path then ArachnophobiaShieldSettings.customCover = path end
+	if ArachnophobiaShield.Cover and ArachnophobiaShield.Cover.inited then ArachnophobiaShield.Cover.ApplyStyle() end
+	if ArachnophobiaShield.Config then ArachnophobiaShield.Config.Refresh() end
 	return true, "Cover: " .. P.Current().label
 end
 

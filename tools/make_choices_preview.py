@@ -22,7 +22,7 @@ def main():
         for x in range(TILE_W * len(COVERS)):
             px[x, y] = ((DARK if (x // CHECK + y // CHECK) % 2 else LIGHT) + (255,))
     for i, name in enumerate(COVERS):
-        cover = Image.open(ROOT / "ArachnaphobiaShield" / name).convert("RGBA")
+        cover = Image.open(ROOT / "ArachnophobiaShield" / name).convert("RGBA")
         cover = cover.resize((TILE_W, TILE_H - 40), Image.LANCZOS)
         sheet.alpha_composite(cover, (i * TILE_W, 20))
     out = ROOT / "docs" / "art" / "cover_choices.png"

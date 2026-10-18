@@ -4,7 +4,7 @@ Regenerate after any picker layout or cover asset change so the bundled
 preview matches the release:
     uv run --with pillow python tools/render_config_preview.py
 
-The layout mirrors ArachnaphobiaShield/Config.lua (640x480 window, preset buttons
+The layout mirrors ArachnophobiaShield/Config.lua (640x480 window, preset buttons
 left, checker + fox preview right, custom-image row at the bottom). v0.3.8
 removed the opacity section, so the window is shorter.
 """
@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 from make_backgrounds import PICKER_TEXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
-ADDON = ROOT / "ArachnaphobiaShield"
+ADDON = ROOT / "ArachnophobiaShield"
 OUT = ROOT / "docs" / "art" / "config_preview.png"
 
 W, H = 640, 480
@@ -43,7 +43,7 @@ def main():
     draw = ImageDraw.Draw(sheet)
 
     # Title, subtitle, close button.
-    label(draw, (16, 12, 480, 30), "Arachnaphobia Shield - Covers", 19)
+    label(draw, (16, 12, 480, 30), "Arachnophobia Shield - Covers", 19)
     label(draw, (20, 44, 600, 26), "Choose the cover image that feels comfortable for you.", 14)
     draw.rectangle((554, 14, 624, 42), fill=BTN)
     label(draw, (554, 14, 70, 28), "Close", 14, align="center")

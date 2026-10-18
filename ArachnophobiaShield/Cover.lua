@@ -1,15 +1,15 @@
 -- Nameplate-only cover pool. Every cover is permanently click-through.
 -- Frames stay hidden until attached to an accessible native nameplate.
-ArachnaphobiaShield = ArachnaphobiaShield or {}
+ArachnophobiaShield = ArachnophobiaShield or {}
 
 local C = {}
-ArachnaphobiaShield.Cover = C
+ArachnophobiaShield.Cover = C
 
 C.MAX = 24
-C.ART_PATH = "Interface\\AddOns\\ArachnaphobiaShield\\cover.tga"
+C.ART_PATH = "Interface\\AddOns\\ArachnophobiaShield\\cover.tga"
 -- The navy floor under unverified custom art ships as a TGA: on this client
 -- only the string-path SetTexture form works (numeric is a silent no-op).
-C.BACKDROP_PATH = "Interface\\AddOns\\ArachnaphobiaShield\\cover-backdrop.tga"
+C.BACKDROP_PATH = "Interface\\AddOns\\ArachnophobiaShield\\cover-backdrop.tga"
 
 C.pool = {}  -- [1..MAX] = nameplate-only frames; no saved screen positions
 C.free = {}  -- free slot indices
@@ -61,7 +61,7 @@ function C.Init()
 end
 
 function C.Size()
-	local s = ArachnaphobiaShieldSettings
+	local s = ArachnophobiaShieldSettings
 	return (type(s) == "table" and type(s.coverSize) == "number") and s.coverSize or 96
 end
 
@@ -104,7 +104,7 @@ function C.PaintCover(base, art, preset)
 end
 
 function C.ApplyStyle()
-	local preset = ArachnaphobiaShield.Appearance.Current()
+	local preset = ArachnophobiaShield.Appearance.Current()
 	C.textureFailed = false
 	for i = 1, C.MAX do
 		local slot = C.pool[i]
@@ -142,7 +142,7 @@ function C.Detach(i)
 	if not slot then return false end
 	if not pcall(slot.frame.EnableMouse, slot.frame, false) then return false end
 	if not pcall(slot.frame.SetParent, slot.frame, UIParent) then
-		ArachnaphobiaShield.coverageLimited = true
+		ArachnophobiaShield.coverageLimited = true
 		return false
 	end
 	if slot.frame.ClearAllPoints and not pcall(slot.frame.ClearAllPoints, slot.frame) then return false end
@@ -152,9 +152,9 @@ end
 
 -- Native parenting carries movement and perspective between polling ticks.
 function C.PlaceTracked(i, plate, dropY)
-	if not ArachnaphobiaShieldSettings.enabled or ArachnaphobiaShield.hidden then return false end
+	if not ArachnophobiaShieldSettings.enabled or ArachnophobiaShield.hidden then return false end
 	local slot = C.pool[i]
-	if not slot or not slot.allocated or slot.pendingRelease or not ArachnaphobiaShield.Access.FrameUsable(plate) or not slot.frame.SetPoint then return false end
+	if not slot or not slot.allocated or slot.pendingRelease or not ArachnophobiaShield.Access.FrameUsable(plate) or not slot.frame.SetPoint then return false end
 	local mouseOK = pcall(slot.frame.EnableMouse, slot.frame, false)
 	if not mouseOK then return false end
 	dropY = dropY or 0
@@ -264,7 +264,7 @@ function C.ShownCount()
 	if not C.inited then return 0 end
 	local n = 0
 	for _, slot in ipairs(C.pool) do
-		if ArachnaphobiaShield.Access.Query(slot.frame.IsShown, slot.frame) == true then n = n + 1 end
+		if ArachnophobiaShield.Access.Query(slot.frame.IsShown, slot.frame) == true then n = n + 1 end
 	end
 	return n
 end

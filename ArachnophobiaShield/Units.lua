@@ -1,10 +1,10 @@
--- Arachnaphobia Shield — Units.lua: the single spider predicate (M3).
+-- Arachnophobia Shield — Units.lua: the single spider predicate (M3).
 -- Every "is this unit a spider?" decision goes through U.IsSpider.
-ArachnaphobiaShield = ArachnaphobiaShield or {}
+ArachnophobiaShield = ArachnophobiaShield or {}
 
 local U = {}
-ArachnaphobiaShield.Units = U
-local A = ArachnaphobiaShield.Access
+ArachnophobiaShield.Units = U
+local A = ArachnophobiaShield.Access
 
 -- Built-in name fragments (owner-maintained): generic spider vocabulary,
 -- matched case-insensitively. They back up the primary family check for
@@ -26,7 +26,7 @@ U.NAME_PATTERNS = {
 -- rebuilt only when the user list changes length.
 local patCache, patStamp
 local function namePatterns()
-	local s = ArachnaphobiaShieldSettings or {}
+	local s = ArachnophobiaShieldSettings or {}
 	local user = (type(s.namePatterns) == "table") and s.namePatterns or {}
 	if patCache and patStamp == #user then return patCache end
 	local out, seen = {}, {}
@@ -47,7 +47,7 @@ end
 
 -- Spider predicate (PLAN §3.1). `unit` is a tracked unit token.
 function U.IsSpider(unit)
-	local s = ArachnaphobiaShieldSettings or {}
+	local s = ArachnophobiaShieldSettings or {}
 	if not A.UnitReadable(unit) then return false end
 
 	-- 1. Never cover players.

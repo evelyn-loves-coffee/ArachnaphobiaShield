@@ -17,7 +17,7 @@ extracted zip.
 
 Development and live testing happen on the owner's own machine: this
 checkout's `dist/` package is live-swapped into
-`~/Apps/wow/AddOns/ArachnaphobiaShield` (the game's
+`~/Apps/wow/AddOns/ArachnophobiaShield` (the game's
 `_classic_beta_/Interface/AddOns` is the same directory, bind-mounted
 through the Proton prefix). The owner exits/reloads the client to apply
 changes. A full game exit is still the documented safe path for folder
@@ -45,7 +45,7 @@ replacement; live swaps are acceptable to the owner with `/reload`.
 - Covers are always fully opaque (the client's distance fade makes any
   opacity control fiction — see constraints below).
 - Picker: `/as config` opens an explicit window (the only input-taking
-  surface). Presets + strict `ArachnaphobiaShield\Custom\` custom path,
+  surface). Presets + strict `ArachnophobiaShield\Custom\` custom path,
   prefilled prefix, caret parked at the end of the prefix. No native
   Slider frame is ever created (a Slider froze the cursor in v0.3.2–0.4).
 - Look-away warning: centered, click-through, 1.75 s, observes accessible
@@ -155,14 +155,14 @@ with the consolidation; kept in Git).
 - `tools/make_backgrounds.py` — the four camo presets, 8×8 picker UI
   textures, `cover-backdrop.tga`. `tools/make_cover_alpha.py` — fox cut +
   camo card (pure function of the opaque import; restore with
-  `git show HEAD:ArachnaphobiaShield/cover.tga`). `tools/import_cover.py`
+  `git show HEAD:ArachnophobiaShield/cover.tga`). `tools/import_cover.py`
   — local PNG/JPEG → 24-bit TGA. `tools/make_art.py` — addon icon.
-- `tools/package_addon.py` — writes `dist/ArachnaphobiaShield-<v>-fixed.zip`
+- `tools/package_addon.py` — writes `dist/ArachnophobiaShield-<v>-fixed.zip`
   (git-ignored), validates TGA invariants, re-runs the offline suite
   against the extracted files.
 
 ```bash
-cd ArachnaphobiaShield
+cd ArachnophobiaShield
 export UV_CACHE_DIR="$PWD/.test-cache" UV_LINK_MODE=copy
 lua5.1 tools/test_core.lua
 uv run --with lupa python tools/package_addon.py

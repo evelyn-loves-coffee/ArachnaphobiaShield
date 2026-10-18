@@ -141,14 +141,14 @@ def main():
                     r, g, b = camo_color(color, x, y, SIZE, seed)
                     row.append((r, g, b, a))
             rows.append(row)
-        write_tga(str(ROOT / "ArachnaphobiaShield" / f"cover-{name}.tga"), SIZE, SIZE, rows, 32)
+        write_tga(str(ROOT / "ArachnophobiaShield" / f"cover-{name}.tga"), SIZE, SIZE, rows, 32)
         write_png(str(previews / f"cover-{name}_preview.png"), SIZE, SIZE, rows)
     for filename, color in PICKER_TEXTURES.items():
         rows = [[(color[0], color[1], color[2]) for _ in range(8)] for _ in range(8)]
-        write_tga(str(ROOT / "ArachnaphobiaShield" / filename), 8, 8, rows, 24)
+        write_tga(str(ROOT / "ArachnophobiaShield" / filename), 8, 8, rows, 24)
     # Navy floor drawn under unverified custom art (Cover.lua's
     # BACKDROP_PATH), string-path texture for the same client reason.
-    write_tga(str(ROOT / "ArachnaphobiaShield" / "cover-backdrop.tga"), 8, 8,
+    write_tga(str(ROOT / "ArachnophobiaShield" / "cover-backdrop.tga"), 8, 8,
               [[BACKDROP for _ in range(8)] for _ in range(8)], 24)
     # Editor-only transparency preview; never used as a model cover.
     import struct
@@ -158,7 +158,7 @@ def main():
         for x in range(64):
             color = (88, 94, 108) if (x // 8 + y // 8) % 2 else (134, 140, 154)
             body.extend(reversed(color))
-    (ROOT / "ArachnaphobiaShield" / "preview-checker.tga").write_bytes(header + body)
+    (ROOT / "ArachnophobiaShield" / "preview-checker.tga").write_bytes(header + body)
     print("Generated red, blue, sage, charcoal camouflage squircles (32-bit RGBA, "
           "transparent corners), four picker UI textures, the custom-art navy "
           "floor and the preview checker")

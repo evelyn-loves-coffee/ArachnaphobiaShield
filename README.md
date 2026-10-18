@@ -1,4 +1,4 @@
-# Arachnaphobia Shield — WoW Forever Addon
+# Arachnophobia Shield — WoW Forever Addon
 
 Addon for **World of Warcraft Forever** (classic 1.x-line client, v1.60.1)
 that covers spider models with a nameplate-attached UI element. UI-layer
@@ -29,9 +29,9 @@ change history lives in Git.
 
 ## Install
 
-Extract the fixed ZIP and replace the `ArachnaphobiaShield/` folder in
+Extract the fixed ZIP and replace the `ArachnophobiaShield/` folder in
 your client's `Interface/AddOns/` directory. The `.toc` must sit at
-`Interface/AddOns/ArachnaphobiaShield/ArachnaphobiaShield.toc`, without an
+`Interface/AddOns/ArachnophobiaShield/ArachnophobiaShield.toc`, without an
 extra nested folder. Log in or `/reload`; `/as version` reports the
 version and `/as selftest` reports the live tracking state.
 
@@ -91,7 +91,7 @@ units are excluded.
 The picker has no file browser by design: the addon never enumerates the
 game's filesystem. Put a `.tga` in the addon's `Custom\` folder and point
 the addon at it with the picker or `/as cover custom
-Interface\AddOns\ArachnaphobiaShield\Custom\<file>.tga` (path relative to
+Interface\AddOns\ArachnophobiaShield\Custom\<file>.tga` (path relative to
 the game root, backslashes; a bare file name is rejected — the picker
 prefills the required prefix). A navy backing is drawn behind custom
 images, so transparency in your art shows navy, not the world.
@@ -124,7 +124,7 @@ troubleshooting table: [docs/COVER-IMAGES.md](docs/COVER-IMAGES.md).
 
 ## Credits and data
 
-Arachnaphobia Shield is an independent **spiritual successor to the
+Arachnophobia Shield is an independent **spiritual successor to the
 accessibility approach** of [NoSpider - Arachnophobia Mode](https://www.curseforge.com/wow/addons/nospider-arachnophobia-mode)
 by **GrasHopper42**. No NoSpider code, artwork, bundled libraries,
 zone tables, spawn coordinates or creature lists have been copied or

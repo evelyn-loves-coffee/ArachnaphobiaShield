@@ -58,7 +58,7 @@ GetCursorPosition = function()
     error("automatic covers must not read the cursor", 0)
 end
 
-C_Timer = { After = function() end } -- no-op; tests drive ArachnaphobiaShield.Tick()
+C_Timer = { After = function() end } -- no-op; tests drive ArachnophobiaShield.Tick()
 
 UIParent = { scale = 1 }
 function UIParent:GetEffectiveScale() return self.scale end
@@ -221,11 +221,11 @@ end
 
 -- Saved fixtures intentionally include the retired settings that caused
 -- input problems on the partner's client. They must be deleted, not restored.
-ArachnaphobiaShieldSettings = { enabled = "yes", parkCount = 8, arrange = true,
+ArachnophobiaShieldSettings = { enabled = "yes", parkCount = 8, arrange = true,
     covers = { Partner = { init = true, list = { { x = 100, y = 200, kind = "park" } } } },
     autoTrack = false, stickyCovers = true }
 for _, file in ipairs({ "Access", "Units", "DeathWarning", "Appearance", "Cover", "Config", "Core" }) do
-    dofile("ArachnaphobiaShield/" .. file .. ".lua")
+    dofile("ArachnophobiaShield/" .. file .. ".lua")
 end
 
 local fails = 0
@@ -247,53 +247,53 @@ local function capture(fn)
 end
 
 -- ---- settings and commands --------------------------------------------
-check(ArachnaphobiaShieldSettings.version == 5 and ArachnaphobiaShieldSettings.enabled == true,
+check(ArachnophobiaShieldSettings.version == 5 and ArachnophobiaShieldSettings.enabled == true,
     "upgrade: schema 5 repairs invalid enabled state")
-check(ArachnaphobiaShieldSettings.covers == nil and ArachnaphobiaShieldSettings.parkCount == nil and ArachnaphobiaShieldSettings.arrange == nil,
+check(ArachnophobiaShieldSettings.covers == nil and ArachnophobiaShieldSettings.parkCount == nil and ArachnophobiaShieldSettings.arrange == nil,
     "upgrade: all characters' old cover layouts and input modes are removed")
-check(ArachnaphobiaShieldSettings.autoTrack == nil and ArachnaphobiaShieldSettings.stickyCovers == nil,
+check(ArachnophobiaShieldSettings.autoTrack == nil and ArachnophobiaShieldSettings.stickyCovers == nil,
     "upgrade: retired detection modes cannot suppress tracking")
 check(_G.SLASH_AS1 == "/as" and type(SlashCmdList["AS"]) == "function",
     "slash: /as is registered")
-local out = capture(function() ArachnaphobiaShield.Slash("") end)
+local out = capture(function() ArachnophobiaShield.Slash("") end)
 check(#out == 2
     and out[1] == "AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>"
     and out[2] == "AS| Advanced: scale N (40-130, 100 = default) / drop N / names / name X / forget X",
     "status: bare /as prints usage, identical to /as help")
-out = capture(function() ArachnaphobiaShield.Slash("version") end)
+out = capture(function() ArachnophobiaShield.Slash("version") end)
 check(#out == 1 and out[1]:find("WoW 1%.60%.1") ~= nil and out[1]:find("interface 16001") ~= nil
     and out[1]:find("Lua 5.1") ~= nil,
     "version: reports the addon version, client build, interface and Lua")
-out = capture(function() ArachnaphobiaShield.Slash("selftest") end)
+out = capture(function() ArachnophobiaShield.Slash("selftest") end)
 check(#out == 2 and out[1]:find("enabled=") ~= nil and out[2]:find("tracked=") ~= nil
     and out[2]:find("limited=") ~= nil,
     "selftest: reports the live state and tracking stats")
 
 -- ---- /as scale / /as near: v0.4.1 percentage and automatic near -------
-out = capture(function() ArachnaphobiaShield.Slash("scale 100") end)
-check(#out == 1 and out[1]:find("scale = 100%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.0,
+out = capture(function() ArachnophobiaShield.Slash("scale 100") end)
+check(#out == 1 and out[1]:find("scale = 100%", 1, true) and ArachnophobiaShieldSettings.trackScale == 1.0,
     "scale: 100 is the default and stores a 1.0 multiplier")
-out = capture(function() ArachnaphobiaShield.Slash("scale 40") end)
-check(out[1]:find("scale = 40%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 0.4, "scale: 40 stores 0.4 (lower bound)")
-out = capture(function() ArachnaphobiaShield.Slash("scale 130") end)
-check(out[1]:find("scale = 130%", 1, true) and ArachnaphobiaShieldSettings.trackScale == 1.3, "scale: 130 stores 1.3 (upper bound)")
+out = capture(function() ArachnophobiaShield.Slash("scale 40") end)
+check(out[1]:find("scale = 40%", 1, true) and ArachnophobiaShieldSettings.trackScale == 0.4, "scale: 40 stores 0.4 (lower bound)")
+out = capture(function() ArachnophobiaShield.Slash("scale 130") end)
+check(out[1]:find("scale = 130%", 1, true) and ArachnophobiaShieldSettings.trackScale == 1.3, "scale: 130 stores 1.3 (upper bound)")
 for _, bad in ipairs({ "39", "131", "1.5" }) do
-    out = capture(function() ArachnaphobiaShield.Slash("scale " .. bad) end)
+    out = capture(function() ArachnophobiaShield.Slash("scale " .. bad) end)
     check(#out == 1 and out[1]:find("whole number 40-130", 1, true), "scale rejects: " .. bad)
 end
-out = capture(function() ArachnaphobiaShield.Slash("scale abc") end)
+out = capture(function() ArachnophobiaShield.Slash("scale abc") end)
 check(#out == 1 and out[1]:find("scale = 130%", 1, true), "scale: non-numeric input reports the current value")
-out = capture(function() ArachnaphobiaShield.Slash("scale") end)
+out = capture(function() ArachnophobiaShield.Slash("scale") end)
 check(#out == 1 and out[1]:find("scale = 130%", 1, true), "scale: no argument reports the current percentage")
-out = capture(function() ArachnaphobiaShield.Slash("near") end)
+out = capture(function() ArachnophobiaShield.Slash("near") end)
 check(#out == 1 and out[1]:find("automatic", 1, true),
     "near: reports the boost is automatic now")
-out = capture(function() ArachnaphobiaShield.Slash("near 2") end)
+out = capture(function() ArachnophobiaShield.Slash("near 2") end)
 check(#out == 1 and out[1]:find("automatic", 1, true),
     "near: the retired level argument no longer stores a threshold")
-check(ArachnaphobiaShieldSettings.nearThreshold == nil,
+check(ArachnophobiaShieldSettings.nearThreshold == nil,
     "near: the retired threshold key is not resurrected")
-out = capture(function() ArachnaphobiaShield.Slash("help") end)
+out = capture(function() ArachnophobiaShield.Slash("help") end)
 check(#out == 2
     and out[1] == "AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>"
     and out[2] == "AS| Advanced: scale N (40-130, 100 = default) / drop N / names / name X / forget X",
@@ -301,31 +301,31 @@ check(#out == 2
 
 -- ---- predicate ----------------------------------------------------------
 setUnit("t", { name = "Young Night Web Spider", level = 2, famName = "Spider", famId = 3, id = 1504 })
-check(ArachnaphobiaShield.Units.IsSpider("t") == true, "predicate: family id 3 -> spider")
+check(ArachnophobiaShield.Units.IsSpider("t") == true, "predicate: family id 3 -> spider")
 setUnit("p", { name = "WarriorGuy", class = "Warrior", player = true,
 	famName = "Spider", famId = 3, level = 20 })
-check(ArachnaphobiaShield.Units.IsSpider("p") == false, "predicate: player never covered (UnitIsPlayer)")
+check(ArachnophobiaShield.Units.IsSpider("p") == false, "predicate: player never covered (UnitIsPlayer)")
 -- AS14 regression: the client reports an NPC's class as its NAME; that must
 -- not make the guard reject the spider (in-game P3/P4: IsSpider=false).
 check(UnitClass("t") == "Young Night Web Spider",
 	"predicate: client reports NPC 'class' as the unit name (AS14)")
-check(ArachnaphobiaShield.Units.IsSpider("t") == true,
+check(ArachnophobiaShield.Units.IsSpider("t") == true,
 	"predicate: spider still detected despite name-as-class report (AS14)")
 setUnit("player", { name = "WarriorGuy", class = "Warrior", player = true })
 setUnit("p2", { name = "WarriorGuy", famName = "Spider", famId = 3, level = 20 })
-check(ArachnaphobiaShield.Units.IsSpider("p2") == false,
+check(ArachnophobiaShield.Units.IsSpider("p2") == false,
 	"predicate: same name as the player is never covered (name guard)")
-check(ArachnaphobiaShield.Units.IsSpider("t") == true,
+check(ArachnophobiaShield.Units.IsSpider("t") == true,
 	"predicate: spider detection unaffected by a known player unit")
 clearUnits()
 setUnit("t2", { name = "Gloomweaver", level = 5 })
-check(ArachnaphobiaShield.Units.IsSpider("t2") == true, "predicate: name pattern Gloomweaver")
+check(ArachnophobiaShield.Units.IsSpider("t2") == true, "predicate: name pattern Gloomweaver")
 setUnit("t3", { name = "Big Bad Spider", level = 10 })
-check(ArachnaphobiaShield.Units.IsSpider("t3") == true, "predicate: name contains Spider")
-ArachnaphobiaShieldSettings.extraNames = { "Skitterclaw" }
+check(ArachnophobiaShield.Units.IsSpider("t3") == true, "predicate: name contains Spider")
+ArachnophobiaShieldSettings.extraNames = { "Skitterclaw" }
 setUnit("t4", { name = "Skitterclaw", level = 3 })
-check(ArachnaphobiaShield.Units.IsSpider("t4") == true, "predicate: extraNames exact match")
-ArachnaphobiaShieldSettings.extraNames = {}
+check(ArachnophobiaShield.Units.IsSpider("t4") == true, "predicate: extraNames exact match")
+ArachnophobiaShieldSettings.extraNames = {}
 
 -- ---- detection layers: family -> built-in fragments -> extraNames ------
 -- Family 3 is primary. A creature filed outside the Spider family whose
@@ -335,50 +335,50 @@ ArachnaphobiaShieldSettings.extraNames = {}
 -- covered by layer 1; this fixture models a Beast-family creature whose
 -- name gives nothing away.
 setUnit("d1", { name = "Moss Crawler", level = 12, famName = "Beast", famId = 1 })
-check(ArachnaphobiaShield.Units.IsSpider("d1") == false,
+check(ArachnophobiaShield.Units.IsSpider("d1") == false,
 	"layers: family-Beast creature with no spider word in the name is not covered")
-ArachnaphobiaShieldSettings.extraNames = { "Moss Crawler" }
-check(ArachnaphobiaShield.Units.IsSpider("d1") == true,
+ArachnophobiaShieldSettings.extraNames = { "Moss Crawler" }
+check(ArachnophobiaShield.Units.IsSpider("d1") == true,
 	"layers: /as name (extraNames) recovers a family-Beast creature")
-ArachnaphobiaShieldSettings.extraNames = {}
+ArachnophobiaShieldSettings.extraNames = {}
 setUnit("d2", { name = "Crypt Horror", level = 50 })
-check(ArachnaphobiaShield.Units.IsSpider("d2") == false,
+check(ArachnophobiaShield.Units.IsSpider("d2") == false,
 	"layers: no creature family and no fragment in the name -> not covered")
 setUnit("d4", { name = "Young Scavenger", level = 24, famName = "Beast", famId = 1 })
-check(ArachnaphobiaShield.Units.IsSpider("d4") == false,
+check(ArachnophobiaShield.Units.IsSpider("d4") == false,
 	"layers: a non-spider beast is not covered by name or family")
 setUnit("d5", { name = "Ash Spider", level = 20, famName = "Beast", famId = 1 })
-check(ArachnaphobiaShield.Units.IsSpider("d5") == true,
+check(ArachnophobiaShield.Units.IsSpider("d5") == true,
 	"layers: a non-spider-family creature with a spider name fragment is covered")
 setUnit("d6", { name = "WEBWOOD LURKER", level = 20 })
-check(ArachnaphobiaShield.Units.IsSpider("d6") == true, "layers: fragments match case-insensitively")
+check(ArachnophobiaShield.Units.IsSpider("d6") == true, "layers: fragments match case-insensitively")
 
 -- settings.namePatterns is ADDITIVE (user fragments are unioned on top of
 -- the built-in list; replacing would drop them).
-ArachnaphobiaShieldSettings.namePatterns = { "Arachnid" }
+ArachnophobiaShieldSettings.namePatterns = { "Arachnid" }
 setUnit("d7", { name = "Giant Arachnid", level = 10 })
-check(ArachnaphobiaShield.Units.IsSpider("d7") == true, "layers: user fragments are honoured")
+check(ArachnophobiaShield.Units.IsSpider("d7") == true, "layers: user fragments are honoured")
 setUnit("d8", { name = "Webwood Silkspinner", level = 20 })
-check(ArachnaphobiaShield.Units.IsSpider("d8") == true,
+check(ArachnophobiaShield.Units.IsSpider("d8") == true,
 	"layers: built-in fragments still work while user fragments are set")
-ArachnaphobiaShieldSettings.namePatterns = {}
+ArachnophobiaShieldSettings.namePatterns = {}
 clearUnits()
 
 -- ---- /as name | names | forget (owner escape hatch) -----------------
 out = capture(function() SlashCmdList["AS"](" name Anconan Spider ") end)
-check(ArachnaphobiaShieldSettings.extraNames[1] == "Anconan Spider" and #out == 1,
+check(ArachnophobiaShieldSettings.extraNames[1] == "Anconan Spider" and #out == 1,
 	"name: adds an exact creature name")
 setUnit("n1", { name = "anconan spider", level = 20 })
-check(ArachnaphobiaShield.Units.IsSpider("n1") == true,
+check(ArachnophobiaShield.Units.IsSpider("n1") == true,
 	"name: the named creature is covered straight away (case-insensitive)")
 out = capture(function() SlashCmdList["AS"](" name Anconan Spider ") end)
-check(#ArachnaphobiaShieldSettings.extraNames == 1 and out[1]:find("already on your") ~= nil,
+check(#ArachnophobiaShieldSettings.extraNames == 1 and out[1]:find("already on your") ~= nil,
 	"name: duplicates refused instead of growing the list")
 out = capture(function() SlashCmdList["AS"](" names ") end)
 check(out[1]:find("1 extra name") ~= nil and out[2]:find("Anconan Spider") ~= nil,
 	"names: header line plus the list")
 out = capture(function() SlashCmdList["AS"](" forget Anconan Spider ") end)
-check(#ArachnaphobiaShieldSettings.extraNames == 0 and out[1]:find("forgot") ~= nil,
+check(#ArachnophobiaShieldSettings.extraNames == 0 and out[1]:find("forgot") ~= nil,
 	"forget: removes the name again")
 out = capture(function() SlashCmdList["AS"](" name ") end)
 check(out[1]:find("usage") ~= nil, "name: bare form prints usage and changes nothing")
@@ -386,86 +386,86 @@ check(out[1]:find("usage") ~= nil, "name: bare form prints usage and changes not
 for i = 1, 20 do
 	SlashCmdList["AS"](" name Spider With A Very Long Placeholder Name " .. i .. " ")
 end
-check(#ArachnaphobiaShieldSettings.extraNames == 20, "name: 20 distinct names accepted")
+check(#ArachnophobiaShieldSettings.extraNames == 20, "name: 20 distinct names accepted")
 out = capture(function() SlashCmdList["AS"](" names ") end)
 local over = 0
 for _, line in ipairs(out) do if #line > 255 then over = over + 1 end end
 check(#out >= 3 and over == 0, "names: long list wraps inside the 255-char chat limit")
-ArachnaphobiaShieldSettings.extraNames = {}
+ArachnophobiaShieldSettings.extraNames = {}
 clearUnits()
 setUnit("t5", { name = "Spiderling", level = 5, famName = "Spider", famId = 3 })
-ArachnaphobiaShieldSettings.minLevel = 10
-check(ArachnaphobiaShield.Units.IsSpider("t5") == false, "predicate: level window excludes")
-ArachnaphobiaShieldSettings.minLevel = 1
+ArachnophobiaShieldSettings.minLevel = 10
+check(ArachnophobiaShield.Units.IsSpider("t5") == false, "predicate: level window excludes")
+ArachnophobiaShieldSettings.minLevel = 1
 setUnit("t6", { name = "Spider", level = 3, famName = "Spider", famId = 3, hostile = false })
-ArachnaphobiaShieldSettings.requireHostile = true
-check(ArachnaphobiaShield.Units.IsSpider("t6") == false, "predicate: requireHostile + friendly -> no")
+ArachnophobiaShieldSettings.requireHostile = true
+check(ArachnophobiaShield.Units.IsSpider("t6") == false, "predicate: requireHostile + friendly -> no")
 units["t6"].hostile = true
-check(ArachnaphobiaShield.Units.IsSpider("t6") == true, "predicate: requireHostile + hostile -> yes")
-ArachnaphobiaShieldSettings.requireHostile = false
+check(ArachnophobiaShield.Units.IsSpider("t6") == true, "predicate: requireHostile + hostile -> yes")
+ArachnophobiaShieldSettings.requireHostile = false
 clearUnits()
 
 -- ---- enter / disable / reload with legacy settings ---------------------
 clearUnits()
 setUnit("player", { name = "TestWarrior", player = true })
-ArachnaphobiaShieldSettings.minLevel, ArachnaphobiaShieldSettings.maxLevel, ArachnaphobiaShieldSettings.requireHostile = 1, 99, false
-ArachnaphobiaShieldSettings.trackScale, ArachnaphobiaShieldSettings.drop, ArachnaphobiaShieldSettings.coverSize = 1.0, 0.5, 96
-ArachnaphobiaShield.ready = false
+ArachnophobiaShieldSettings.minLevel, ArachnophobiaShieldSettings.maxLevel, ArachnophobiaShieldSettings.requireHostile = 1, 99, false
+ArachnophobiaShieldSettings.trackScale, ArachnophobiaShieldSettings.drop, ArachnophobiaShieldSettings.coverSize = 1.0, 0.5, 96
+ArachnophobiaShield.ready = false
 event = "PLAYER_ENTERING_WORLD"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
 event = nil
 flushDisplay()
-check(ArachnaphobiaShield.ready and ArachnaphobiaShield.driverOn and ArachnaphobiaShield.Cover.ShownCount() == 0,
+check(ArachnophobiaShield.ready and ArachnophobiaShield.driverOn and ArachnophobiaShield.Cover.ShownCount() == 0,
     "login: starts tracking without spawning a screen-positioned cover")
 local allQuiet = true
-for _, slot in ipairs(ArachnaphobiaShield.Cover.pool) do
+for _, slot in ipairs(ArachnophobiaShield.Cover.pool) do
     if slot.frame.mouse ~= false or slot.frame.points[1] ~= nil then allQuiet = false end
 end
 check(allQuiet and movementCalls == 0, "login: every pooled frame ignores input and has no screen anchor")
 setUnit("nameplate1", { name = "Forest Spider", famId = 3, level = 10 })
 setPlate(1, makePlate(100, 1))
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 flushDisplay()
-check(ArachnaphobiaShield.Cover.ShownCount() == 1, "enable: native tracking starts without targeting or mouseover")
-capture(function() ArachnaphobiaShield.Slash("disable") end)
-ArachnaphobiaShield.Tick()
+check(ArachnophobiaShield.Cover.ShownCount() == 1, "enable: native tracking starts without targeting or mouseover")
+capture(function() ArachnophobiaShield.Slash("disable") end)
+ArachnophobiaShield.Tick()
 event, arg1 = "NAME_PLATE_UNIT_ADDED", "nameplate1"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
 event, arg1 = nil, nil
 flushDisplay()
-check(ArachnaphobiaShield.Cover.ShownCount() == 0 and next(ArachnaphobiaShield.track) == nil,
+check(ArachnophobiaShield.Cover.ShownCount() == 0 and next(ArachnophobiaShield.track) == nil,
     "disable: scan and plate events cannot recreate a cover")
 -- Simulate SavedVariables arriving after script load on the partner's client.
-ArachnaphobiaShieldSettings = { enabled = false, coverStyle = "blue", parkCount = 12, arrange = true,
+ArachnophobiaShieldSettings = { enabled = false, coverStyle = "blue", parkCount = 12, arrange = true,
     covers = { A = { { x = 3, y = 4, kind = "park" } }, B = { list = { { x = 5, y = 6 } } } } }
-ArachnaphobiaShield.ready, ArachnaphobiaShield.loadSnapshot.settingsPresent, ArachnaphobiaShield.sawVariablesLoaded = false, false, false
-check(not ArachnaphobiaShield.OnEnterWorld(), "upgrade: waits for the actual late-loaded save")
+ArachnophobiaShield.ready, ArachnophobiaShield.loadSnapshot.settingsPresent, ArachnophobiaShield.sawVariablesLoaded = false, false, false
+check(not ArachnophobiaShield.OnEnterWorld(), "upgrade: waits for the actual late-loaded save")
 event = "VARIABLES_LOADED"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
 event = nil
 flushDisplay()
-check(ArachnaphobiaShieldSettings.version == 5 and ArachnaphobiaShieldSettings.covers == nil
-    and ArachnaphobiaShieldSettings.parkCount == nil and ArachnaphobiaShieldSettings.arrange == nil,
+check(ArachnophobiaShieldSettings.version == 5 and ArachnophobiaShieldSettings.covers == nil
+    and ArachnophobiaShieldSettings.parkCount == nil and ArachnophobiaShieldSettings.arrange == nil,
     "upgrade: late-loaded saved layouts and arrange=true are purged across characters")
-check(ArachnaphobiaShieldSettings.enabled == false and ArachnaphobiaShieldSettings.coverStyle == "blue" and ArachnaphobiaShield.Cover.ShownCount() == 0,
+check(ArachnophobiaShieldSettings.enabled == false and ArachnophobiaShieldSettings.coverStyle == "blue" and ArachnophobiaShield.Cover.ShownCount() == 0,
     "upgrade: preserves disabled state and image choice without restoring covers")
-capture(function() ArachnaphobiaShield.Slash("enable") end)
+capture(function() ArachnophobiaShield.Slash("enable") end)
 flushDisplay()
-check(ArachnaphobiaShieldSettings.enabled and ArachnaphobiaShield.Cover.ShownCount() == 1,
+check(ArachnophobiaShieldSettings.enabled and ArachnophobiaShield.Cover.ShownCount() == 1,
     "enable: resumes only the live nameplate cover")
-capture(function() ArachnaphobiaShield.Slash("enable") end)
+capture(function() ArachnophobiaShield.Slash("enable") end)
 flushDisplay()
-check(ArachnaphobiaShield.Cover.ShownCount() == 1, "enable: repeated enable cannot duplicate covers")
-ArachnaphobiaShieldSettings = {}
-ArachnaphobiaShield.ready = false
-ArachnaphobiaShield.OnEnterWorld()
-ArachnaphobiaShield.ClearTrack()
-check(ArachnaphobiaShieldSettings.coverStyle == "charcoal" and ArachnaphobiaShieldSettings.enabled
-    and ArachnaphobiaShieldSettings.drop == 0.3 and ArachnaphobiaShieldSettings.covers == nil,
+check(ArachnophobiaShield.Cover.ShownCount() == 1, "enable: repeated enable cannot duplicate covers")
+ArachnophobiaShieldSettings = {}
+ArachnophobiaShield.ready = false
+ArachnophobiaShield.OnEnterWorld()
+ArachnophobiaShield.ClearTrack()
+check(ArachnophobiaShieldSettings.coverStyle == "charcoal" and ArachnophobiaShieldSettings.enabled
+    and ArachnophobiaShieldSettings.drop == 0.3 and ArachnophobiaShieldSettings.covers == nil,
     "defaults: fresh install selects the charcoal, drop 0.3, and enables only tracking")
 -- Neutralize the automatic near ramp for the calibrated-geometry tests
 -- below; the near block re-enables the boost and tests the ramp itself.
-ArachnaphobiaShieldSettings.nearBoost = 1.0
+ArachnophobiaShieldSettings.nearBoost = 1.0
 
 -- The owner's actual goal (2026-10-15): walk toward spiders, no targeting and
 -- no mouseover, and a cover appears over each spider model, moving and
@@ -477,10 +477,10 @@ ArachnaphobiaShieldSettings.nearBoost = 1.0
 --     throws too, so measuring anything plate-related fails the suite
 --   * anchoring our own frame to a plate is allowed (N7: "anchor=true")
 
-ArachnaphobiaShield.track = {}
+ArachnophobiaShield.track = {}
 clearUnits()
 setUnit("player", { name = "TestWarrior", class = "Warrior" })
-ArachnaphobiaShield.Cover.ClearAll()
+ArachnophobiaShield.Cover.ClearAll()
 
 local plateA = setPlate(1, makePlate(100, 0.5)) -- apparent width 50 UI units
 local plateB = setPlate(2, makePlate(100, 0.5))
@@ -490,21 +490,21 @@ setUnit("nameplate1",
 	{ name = "Young Night Web Spider", level = 24, famName = "Spider", famId = 3, id = 1504 })
 setUnit("nameplate2", { name = "Young Scavenger", level = 24, famId = 1, id = 1499 })
 
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 flushDisplay()
-local trA = ArachnaphobiaShield.track.nameplate1
-check(ArachnaphobiaShield.Cover.ShownCount() == 1,
+local trA = ArachnophobiaShield.track.nameplate1
+check(ArachnophobiaShield.Cover.ShownCount() == 1,
 	"track: one cover for the visible spider, none for the beast (no mouseover needed)")
-check(trA ~= nil and ArachnaphobiaShield.Cover.IsAllocated(trA), "track: matching unit owns an allocated cover")
-check(ArachnaphobiaShield.Cover.pool[trA].anchored == true, "track: cover is anchored to the plate")
-local ptA = ArachnaphobiaShield.Cover.pool[trA].frame.points[1]
+check(trA ~= nil and ArachnophobiaShield.Cover.IsAllocated(trA), "track: matching unit owns an allocated cover")
+check(ArachnophobiaShield.Cover.pool[trA].anchored == true, "track: cover is anchored to the plate")
+local ptA = ArachnophobiaShield.Cover.pool[trA].frame.points[1]
 check(ptA and ptA.relFrame == plateA and ptA.anchor == "CENTER" and ptA.relPoint == "CENTER",
 	"track: anchored to the plate frame itself (client moves it, not us)")
-local trackedFrame = ArachnaphobiaShield.Cover.pool[trA].frame
+local trackedFrame = ArachnophobiaShield.Cover.pool[trA].frame
 check(trackedFrame:GetParent() == plateA,
 	"track: cover belongs to the moving nameplate instead of the screen root")
 -- 100 plate-local units (100% of the plate) render as 50 UI units at scale 0.5.
-check(ArachnaphobiaShield.Cover.pool[trA].w == 100 and trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() == 50,
+check(ArachnophobiaShield.Cover.pool[trA].w == 100 and trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() == 50,
 	"track: plate-local cover size inherits distance scale exactly once")
 -- drop = 0.3 cover-heights below the plate (v0.4.9 default; the 2026-10-16
 -- in-game calibration established the range - at 0.9 the model sat above
@@ -537,26 +537,26 @@ plateA.effScale = 1
 check(trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() == 100
 	and ptA.y * trackedFrame:GetEffectiveScale() == -30,
 	"track: camera zoom scales the cover and drop between polling ticks")
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() == 100,
 	"track: next poll does not apply the inherited plate scale a second time")
 plateA.effScale = 0.5
 
 -- The plate gets bigger (camera moves in): the cover grows on the next tick.
 plateA:SetWidth(200)
-ArachnaphobiaShield.Tick()
-check(ArachnaphobiaShield.Cover.pool[trA].w == 200, "track: cover grows when the plate's local width grows")
+ArachnophobiaShield.Tick()
+check(ArachnophobiaShield.Cover.pool[trA].w == 200, "track: cover grows when the plate's local width grows")
 
-check(ArachnaphobiaShieldSettings.covers == nil, "track: no live cover positions are persisted")
+check(ArachnophobiaShieldSettings.covers == nil, "track: no live cover positions are persisted")
 
 -- Frame IDs are pool allocation IDs, not unit IDs. Swap the globals without
 -- changing the creatures, just as the client does when plates are recycled.
 setPlate(1, plateB)
 setPlate(2, plateA)
-ArachnaphobiaShield.Tick()
-check(ArachnaphobiaShield.Cover.pool[trA].frame:GetParent() == plateA,
+ArachnophobiaShield.Tick()
+check(ArachnophobiaShield.Cover.pool[trA].frame:GetParent() == plateA,
 	"track: reordered frame numbers still follow the spider's unit token")
-check(ArachnaphobiaShield.PlateFrameFor("nameplate2", 2) == plateB,
+check(ArachnophobiaShield.PlateFrameFor("nameplate2", 2) == plateB,
 	"lookup: a recycled numeric suffix never overrides explicit unit identity")
 setPlate(1, plateA)
 setPlate(2, plateB)
@@ -564,15 +564,15 @@ setPlate(2, plateB)
 local mapped = makePlate(100, 0.5)
 mapped.unitToken = "nameplate1"
 C_NamePlate = { GetNamePlateForUnit = function() return mapped end }
-ArachnaphobiaShield.Tick()
-check(ArachnaphobiaShield.track.nameplate1 == trA and trackedFrame:GetParent() == mapped,
+ArachnophobiaShield.Tick()
+check(ArachnophobiaShield.track.nameplate1 == trA and trackedFrame:GetParent() == mapped,
 	"track: a changed public mapping reparents the existing cover without duplicating it")
 mapped.unitToken = "nameplate2"
-check(ArachnaphobiaShield.PlateFrameFor("nameplate1", 1) == nil,
+check(ArachnophobiaShield.PlateFrameFor("nameplate1", 1) == nil,
 	"lookup: a mapper returning a different unit is rejected")
 C_NamePlate.GetNamePlateForUnit = function() return nil end
-ArachnaphobiaShield.Tick()
-check(ArachnaphobiaShield.track.nameplate1 == nil and not ArachnaphobiaShield.Cover.IsAllocated(trA),
+ArachnophobiaShield.Tick()
+check(ArachnophobiaShield.track.nameplate1 == nil and not ArachnophobiaShield.Cover.IsAllocated(trA),
 	"track: valid unit with no mapped plate releases its cover instead of sticking forever")
 check(trackedFrame:GetParent() == UIParent,
 	"track: released covers leave the nameplate's movement and scale tree")
@@ -581,19 +581,19 @@ C_NamePlate = nil
 -- The reduced client may expose GetUnit(), UnitFrame.unit, or no metadata.
 local lookup = setPlate(3, makePlate(100, 1))
 lookup.GetUnit = function() return "nameplate4" end
-check(ArachnaphobiaShield.PlateFrameFor("nameplate4", 4) == lookup,
+check(ArachnophobiaShield.PlateFrameFor("nameplate4", 4) == lookup,
 	"lookup: GetUnit resolves a plate whose frame number differs from its token")
 lookup.GetUnit = nil
 lookup.unitToken = nil
 lookup.UnitFrame = { unit = "nameplate4" }
-check(ArachnaphobiaShield.PlateFrameFor("nameplate4", 4) == lookup,
+check(ArachnophobiaShield.PlateFrameFor("nameplate4", 4) == lookup,
 	"lookup: UnitFrame.unit resolves the reduced client's plate")
 lookup.UnitFrame = nil
 lookup.unitToken = nil
-check(ArachnaphobiaShield.PlateFrameFor("nameplate3", 3) == nil,
+check(ArachnophobiaShield.PlateFrameFor("nameplate3", 3) == nil,
 	"lookup: metadata-free clients do not guess frame ownership from numbers")
 lookup:Hide()
-check(ArachnaphobiaShield.PlateFrameFor("nameplate3", 3) == nil,
+check(ArachnophobiaShield.PlateFrameFor("nameplate3", 3) == nil,
 	"lookup: hidden pooled frames cannot own a live cover")
 setPlate(3, nil)
 
@@ -602,23 +602,23 @@ setPlate(3, nil)
 UIParent.scale = 0.8
 plateA.effScale = 0.4
 plateA:SetWidth(100)
-ArachnaphobiaShield.Tick()
-trA = ArachnaphobiaShield.track.nameplate1
-trackedFrame = ArachnaphobiaShield.Cover.pool[trA].frame
+ArachnophobiaShield.Tick()
+trA = ArachnophobiaShield.track.nameplate1
+trackedFrame = ArachnophobiaShield.Cover.pool[trA].frame
 check(trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() / UIParent.scale == 50,
 	"track: non-default UI scale stays independent of perspective scale")
 plateA:SetWidth(10000)
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() / UIParent.scale == 512,
 	"track: maximum cover size remains 512 UI units after parenting")
 plateA:SetWidth(1)
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() / UIParent.scale == 16,
 	"track: minimum cover size remains 16 UI units after parenting")
 local getWidth = plateA.GetWidth
 plateA.GetWidth = nil
-ArachnaphobiaShield.Tick()
-check(math.abs(trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() / UIParent.scale - ArachnaphobiaShield.Cover.Size()) < 0.000001,
+ArachnophobiaShield.Tick()
+check(math.abs(trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() / UIParent.scale - ArachnophobiaShield.Cover.Size()) < 0.000001,
 	"track: unavailable plate width uses the fixed UI size without double scaling")
 plateA.GetWidth = getWidth
 UIParent.scale, plateA.effScale = 1, 0.5
@@ -636,59 +636,59 @@ plateA:SetWidth(100)
 -- 85 UI - flat across the measured close band (87-113 UI) so the cover
 -- cannot "breathe"; far plates stay unboosted (the /as near 1
 -- far-shrink behavior the owner wants kept).
-ArachnaphobiaShieldSettings.nearBoost = 2.5 -- plate apparent width is 100 x 0.5 = 50
-ArachnaphobiaShield.Tick()
+ArachnophobiaShieldSettings.nearBoost = 2.5 -- plate apparent width is 100 x 0.5 = 50
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() == 100,
 	"near: apparent 50 is below the 75 knee - far/mid plates stay unboosted")
-local ptNear = ArachnaphobiaShield.Cover.pool[trA].frame.points[1]
+local ptNear = ArachnophobiaShield.Cover.pool[trA].frame.points[1]
 check(math.abs(ptNear.y * trackedFrame:GetEffectiveScale() + 100 * 0.3 * 0.5) < 0.001,
 	"near: the unboosted cover keeps the drop ratio below the plate")
 plateA.effScale = 0.2 -- apparent 20: a far spider, ramp not started
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() == 100,
 	"near: a far plate below the ramp keeps the calibrated size")
 plateA.effScale = 0.73 -- apparent 73: the client's far clamp (2026-10-17 capture)
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() == 100,
 	"near: the client's 73 UI far clamp stays unboosted (far cover small)")
 plateA.effScale = 0.5
 plateA:SetWidth(160) -- apparent 80: mid-ramp, x = 0.5, boost = 1 + 1.5 x 0.5 = 1.75
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(math.abs(trackedFrame:GetWidth() - 160 * 1.75) < 0.001,
 	"near: mid-ramp apparent width 80 gets the partial boost (ceiling respected)")
-ArachnaphobiaShieldSettings.nearBoost = 2.6
+ArachnophobiaShieldSettings.nearBoost = 2.6
 plateA:SetWidth(170) -- apparent 85: exactly the high knee, full ceiling
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() == 170 * 2.6,
 	"near: at the high knee the boost reaches the full ceiling")
 plateA:SetWidth(180) -- apparent 90: inside the measured close band 87-113
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(trackedFrame:GetWidth() == 180 * 2.6,
 	"near: the boost stays flat across the measured close band (no breathing)")
 plateA:SetWidth(100)
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 
 -- A token changing to a non-spider is positive evidence of reuse. Grace
 -- applies only to a missing token, never to a known different creature.
 setUnit("nameplate1", { name = "Young Scavenger", level = 24, famId = 1, id = 1499 })
-ArachnaphobiaShield.Tick()
-check(ArachnaphobiaShield.track.nameplate1 == nil and not trackedFrame:IsShown(),
+ArachnophobiaShield.Tick()
+check(ArachnophobiaShield.track.nameplate1 == nil and not trackedFrame:IsShown(),
 	"track: token reuse for a non-spider removes the old cover on the first tick")
 setUnit("nameplate1", { name = "Forest Spider", level = 24, famId = 3, id = 1504 })
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 flushDisplay()
-trA = ArachnaphobiaShield.track.nameplate1
+trA = ArachnophobiaShield.track.nameplate1
 
 -- Spider walks away: grace first, then release.
 units.nameplate1 = nil
-ArachnaphobiaShield.Tick()
-check(ArachnaphobiaShield.Cover.ShownCount() == 1, "track: brief loss of the plate does not strobe the cover")
-for _ = 1, 6 do ArachnaphobiaShield.Tick() end
+ArachnophobiaShield.Tick()
+check(ArachnophobiaShield.Cover.ShownCount() == 1, "track: brief loss of the plate does not strobe the cover")
+for _ = 1, 6 do ArachnophobiaShield.Tick() end
 flushDisplay()
-check(ArachnaphobiaShield.Cover.ShownCount() == 0 and ArachnaphobiaShield.track.nameplate1 == nil,
+check(ArachnophobiaShield.Cover.ShownCount() == 0 and ArachnophobiaShield.track.nameplate1 == nil,
 	"track: cover is auto-released once the spider is gone")
 -- ---- hidden allocation, FIFO reuse, ownership and blocked cleanup -------
-local C = ArachnaphobiaShield.Cover
+local C = ArachnophobiaShield.Cover
 C.ClearAll()
 local firstSlot = C.Allocate()
 flushDisplay()
@@ -726,13 +726,13 @@ check(not C.pool[refused].anchored and not refusedFrame:IsShown() and refusedFra
     "attach: partial attachment cleans up without positioning a screen cover")
 local ownershipSlot = C.Allocate()
 C.PlaceTracked(ownershipSlot, poolPlate, 40)
-ArachnaphobiaShield.track.nameplate1, ArachnaphobiaShield.trackSlots[ownershipSlot] = ownershipSlot, "nameplate2"
+ArachnophobiaShield.track.nameplate1, ArachnophobiaShield.trackSlots[ownershipSlot] = ownershipSlot, "nameplate2"
 setUnit("nameplate1", { name = "Forest Spider", famId = 3, level = 10 })
 setPlate(1, makePlate(100, 1))
-ArachnaphobiaShield.TrackTick()
-check(ArachnaphobiaShield.track.nameplate1 ~= ownershipSlot and C.pool[ownershipSlot].frame.parent == poolPlate,
+ArachnophobiaShield.TrackTick()
+check(ArachnophobiaShield.track.nameplate1 ~= ownershipSlot and C.pool[ownershipSlot].frame.parent == poolPlate,
     "ownership: a recycled index cannot adopt another unit's native cover")
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShield.ClearTrack()
 local blocked = C.Allocate()
 C.PlaceTracked(blocked, poolPlate, 40)
 local blockedFrame, normalParent = C.pool[blocked].frame, C.pool[blocked].frame.SetParent
@@ -751,7 +751,7 @@ check(not C.pool[blocked].pendingRelease and blockedFrame.parent == UIParent and
 local freeBefore = #C.free
 C.Release(blocked)
 check(#C.free == freeBefore, "cleanup: repeated release cannot duplicate free indices")
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShield.ClearTrack()
 local blockedMethods = {}
 for _ = 1, C.MAX do
     local index = C.Allocate()
@@ -768,60 +768,60 @@ check(C.Allocate() == nil and #C.free == 0, "cleanup: fully blocked pool returns
 for frame, method in pairs(blockedMethods) do frame.SetParent = method end
 C.RetryReleases()
 check(#C.free == C.MAX, "cleanup: all quarantined slots recover when ordinary APIs permit detachment")
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShield.ClearTrack()
 -- Churn beyond capacity: free-list identities and reverse ownership must stay sane.
 for index = 1, 36 do
     setUnit("nameplate" .. index, { name = "Forest Spider", famId = 3, level = 10 })
     setPlate(index, makePlate(100, 1))
 end
-for _ = 1, 20 do ArachnaphobiaShield.Tick() end
+for _ = 1, 20 do ArachnophobiaShield.Tick() end
 flushDisplay()
 local count, sane = 0, true
-for token, slot in pairs(ArachnaphobiaShield.track) do
+for token, slot in pairs(ArachnophobiaShield.track) do
     count = count + 1
-    if not C.IsAllocated(slot) or ArachnaphobiaShield.trackSlots[slot] ~= token then sane = false end
+    if not C.IsAllocated(slot) or ArachnophobiaShield.trackSlots[slot] ~= token then sane = false end
 end
 check(count == C.MAX and sane and #C.free == 0, "churn: full native pool keeps one matching owner per allocated slot")
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShield.ClearTrack()
 for index = 1, 40 do setPlate(index, nil) end
 clearUnits()
 
 -- ---- anchor refusal fails safe ------------------------------------------
 -- A refused SetPoint must never leave a frame with no anchor on screen, and a
 -- run of refusals must stop instead of churning the pool 10 times a second.
-ArachnaphobiaShield.Cover.ClearAll()
-ArachnaphobiaShield.ClearTrack()
-ArachnaphobiaShield.trackFailures = 0
-local realPlaceTracked = ArachnaphobiaShield.Cover.PlaceTracked
-ArachnaphobiaShield.Cover.PlaceTracked = function() return false end
+ArachnophobiaShield.Cover.ClearAll()
+ArachnophobiaShield.ClearTrack()
+ArachnophobiaShield.trackFailures = 0
+local realPlaceTracked = ArachnophobiaShield.Cover.PlaceTracked
+ArachnophobiaShield.Cover.PlaceTracked = function() return false end
 setPlate(1, makePlate(220, 1.4))
 setUnit("nameplate1", {
 	name = "Forest Spider", famName = "Spider", famId = 3, level = 20,
 	exists = true, visible = true,
 })
 out = capture(function()
-	for _ = 1, 25 do ArachnaphobiaShield.TrackTick() end
+	for _ = 1, 25 do ArachnophobiaShield.TrackTick() end
 end)
 local stillAllocated = 0
-for i = 1, ArachnaphobiaShield.Cover.MAX do
-	if ArachnaphobiaShield.Cover.pool[i].allocated then stillAllocated = stillAllocated + 1 end
+for i = 1, ArachnophobiaShield.Cover.MAX do
+	if ArachnophobiaShield.Cover.pool[i].allocated then stillAllocated = stillAllocated + 1 end
 end
 check(stillAllocated == 0, "anchor refusal: no position-less cover is left allocated")
-check(ArachnaphobiaShield.autoSuspended == true and ArachnaphobiaShieldSettings.enabled == true,
+check(ArachnophobiaShield.autoSuspended == true and ArachnophobiaShieldSettings.enabled == true,
 	"anchor refusal: pauses coverage without silently enabling another detection mode")
-check(ArachnaphobiaShield.trackFailures >= 20, "anchor refusal: refusals counted for diagnostics")
+check(ArachnophobiaShield.trackFailures >= 20, "anchor refusal: refusals counted for diagnostics")
 check(#out == 1 and out[1]:find("would not anchor") ~= nil,
 	"anchor refusal: reported once, not on every tick")
-ArachnaphobiaShield.Cover.PlaceTracked = realPlaceTracked
-ArachnaphobiaShield.Cover.ClearAll()
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShield.Cover.PlaceTracked = realPlaceTracked
+ArachnophobiaShield.Cover.ClearAll()
+ArachnophobiaShield.ClearTrack()
 setPlate(1, nil)
 clearUnits()
 
 -- ---- Forever restrictions ----------------------------------------------
-ArachnaphobiaShield.autoSuspended = false
-ArachnaphobiaShield.Cover.ClearAll()
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShield.autoSuspended = false
+ArachnophobiaShield.Cover.ClearAll()
+ArachnophobiaShield.ClearTrack()
 clearUnits()
 setUnit("player", { name = "RestrictedTester", level = 60, player = true })
 setUnit("nameplate1", { name = "Forest Spider", level = 10, id = 1504, famId = 3 })
@@ -833,15 +833,15 @@ C_NamePlate = { GetNamePlateForUnit = function() return safePlate end }
 local denied = {}
 issecretvalue = function(value) return rawequal(value, denied) end
 canaccessvalue = function(value) return not rawequal(value, denied) end
-check(not ArachnaphobiaShield.Access.CanRead(denied), "access: secret values are rejected before interpretation")
-local first, second, queryOK = ArachnaphobiaShield.Access.Query(function() return "Spider", denied end)
+check(not ArachnophobiaShield.Access.CanRead(denied), "access: secret values are rejected before interpretation")
+local first, second, queryOK = ArachnophobiaShield.Access.Query(function() return "Spider", denied end)
 check(not queryOK and first == nil and second == nil,
 	"access: a secret second return never leaks into family comparisons")
 C_Secrets = { ShouldUnitIdentityBeSecret = function() return true end }
 local realName = UnitName
 local identityCalls = 0
 UnitName = function(unit) identityCalls = identityCalls + 1; return realName(unit) end
-check(not ArachnaphobiaShield.Units.IsSpider("nameplate1") and identityCalls == 0,
+check(not ArachnophobiaShield.Units.IsSpider("nameplate1") and identityCalls == 0,
 	"access: identity restriction prevents name/ID detection rather than trying another channel")
 UnitName = realName
 C_Secrets = nil
@@ -850,92 +850,92 @@ local realID, realFamily, realLevel = UnitCreatureID, UnitCreatureFamily, UnitLe
 UnitCreatureID = function() return denied end
 UnitCreatureFamily = function() return "Beast", denied end
 UnitName = function(unit) if unit == "player" then return "Tester" end; return denied end
-check(not ArachnaphobiaShield.Units.IsSpider("nameplate1"),
+check(not ArachnophobiaShield.Units.IsSpider("nameplate1"),
 	"access: secret names, IDs and family results cannot trigger a guessed cover")
 UnitCreatureID, UnitCreatureFamily, UnitName = realID, realFamily, realName
 UnitLevel = function() return denied end
-check(not ArachnaphobiaShield.Units.IsSpider("nameplate1"),
+check(not ArachnophobiaShield.Units.IsSpider("nameplate1"),
 	"access: secret levels are never used in the configured numeric range")
 UnitLevel = realLevel
 
 safePlate.IsForbidden = function() return true end
 local originalShown = safePlate.IsShown
 safePlate.IsShown = function() error("forbidden frame must not be inspected", 0) end
-check(ArachnaphobiaShield.PlateFrameFor("nameplate1", 1) == nil,
+check(ArachnophobiaShield.PlateFrameFor("nameplate1", 1) == nil,
 	"access: forbidden plates are rejected before their other methods are called")
 safePlate.IsForbidden, safePlate.IsShown = nil, originalShown
 safePlate.GetUnit = function() return denied end
-check(ArachnaphobiaShield.PlateFrameFor("nameplate1", 1) == nil,
+check(ArachnophobiaShield.PlateFrameFor("nameplate1", 1) == nil,
 	"access: secret plate metadata is not treated as missing metadata")
 safePlate.GetUnit = nil
 C_NamePlate.GetNamePlateForUnit = function() error("lookup restricted", 0) end
-check(ArachnaphobiaShield.PlateFrameFor("nameplate1", 1) == nil,
+check(ArachnophobiaShield.PlateFrameFor("nameplate1", 1) == nil,
 	"access: a rejected public lookup is not bypassed with a global-frame search")
 C_NamePlate.GetNamePlateForUnit = function() return safePlate end
 local realWidth, realScale = safePlate.GetWidth, safePlate.GetEffectiveScale
 safePlate.GetWidth = function() return denied end
 safePlate.GetEffectiveScale = function() return denied end
-local geometryOK = pcall(ArachnaphobiaShield.TrackTick)
-local safeSlot = ArachnaphobiaShield.track.nameplate1
-check(geometryOK and safeSlot and ArachnaphobiaShield.Cover.pool[safeSlot].frame:GetParent() == safePlate,
+local geometryOK = pcall(ArachnophobiaShield.TrackTick)
+local safeSlot = ArachnophobiaShield.track.nameplate1
+check(geometryOK and safeSlot and ArachnophobiaShield.Cover.pool[safeSlot].frame:GetParent() == safePlate,
 	"access: inaccessible size/scale uses configured geometry and native parenting without secret arithmetic")
-check(ArachnaphobiaShield.Cover.pool[safeSlot].frame.mouse == false,
+check(ArachnophobiaShield.Cover.pool[safeSlot].frame.mouse == false,
 	"access: a tracked cover always has mouse input explicitly disabled")
 safePlate.GetWidth, safePlate.GetEffectiveScale = realWidth, realScale
 
 -- ---- native events and paused-coverage recovery -------------------------
-ArachnaphobiaShield.ClearTrack()
-ArachnaphobiaShield.autoSuspended = false
+ArachnophobiaShield.ClearTrack()
+ArachnophobiaShield.autoSuspended = false
 clearUnits()
 setUnit("player", { name = "EventTester", player = true })
 setUnit("nameplate1", { name = "Forest Spider", famId = 3, level = 10 })
 setPlate(1, makePlate(100, 1))
 event, arg1 = "NAME_PLATE_UNIT_ADDED", "nameplate1"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
-local eventSlot = ArachnaphobiaShield.track.nameplate1
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
+local eventSlot = ArachnophobiaShield.track.nameplate1
 check(eventSlot ~= nil, "events: native plate addition attaches before the next timer scan")
 event = "NAME_PLATE_UNIT_REMOVED"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
-check(ArachnaphobiaShield.track.nameplate1 == nil and not C.IsAllocated(eventSlot), "events: native plate removal releases immediately")
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
+check(ArachnophobiaShield.track.nameplate1 == nil and not C.IsAllocated(eventSlot), "events: native plate removal releases immediately")
 event, arg1 = nil, nil
-local originalUpdate = ArachnaphobiaShield.Update
-ArachnaphobiaShield.Update = function() error("normal operation rejected", 0) end
-capture(function() for _ = 1, 4 do ArachnaphobiaShield.Tick() end end)
-ArachnaphobiaShield.Update = originalUpdate
-check(ArachnaphobiaShield.autoSuspended and ArachnaphobiaShieldSettings.enabled and C.ShownCount() == 0,
+local originalUpdate = ArachnophobiaShield.Update
+ArachnophobiaShield.Update = function() error("normal operation rejected", 0) end
+capture(function() for _ = 1, 4 do ArachnophobiaShield.Tick() end end)
+ArachnophobiaShield.Update = originalUpdate
+check(ArachnophobiaShield.autoSuspended and ArachnophobiaShieldSettings.enabled and C.ShownCount() == 0,
     "errors: repeated failures pause and release covers")
-capture(function() ArachnaphobiaShield.Slash("enable") end)
-check(not ArachnaphobiaShield.autoSuspended and ArachnaphobiaShield.track.nameplate1 ~= nil,
+capture(function() ArachnophobiaShield.Slash("enable") end)
+check(not ArachnophobiaShield.autoSuspended and ArachnophobiaShield.track.nameplate1 ~= nil,
     "errors: explicit enable retries through normal native APIs")
 C_NamePlate, C_Secrets, issecretvalue, canaccessvalue = nil, nil, nil, nil
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShield.ClearTrack()
 clearUnits()
 for index = 1, 40 do setPlate(index, nil) end
 
 -- ---- centered automatic corpse warnings ---------------------------------
-local W = ArachnaphobiaShield.DeathWarning
+local W = ArachnophobiaShield.DeathWarning
 local originalTime, originalAfter = GetTime, C_Timer.After
 local warningTime, warningTimers = 1000, {}
 GetTime = function() return warningTime end
 C_Timer.After = function(delay, callback)
     warningTimers[#warningTimers + 1] = { delay = delay, callback = callback }
 end
-ArachnaphobiaShieldSettings.enabled = true
-ArachnaphobiaShield.hidden, ArachnaphobiaShield.autoSuspended = nil, false
-ArachnaphobiaShield.Cover.ClearAll()
-ArachnaphobiaShield.ClearTrack()
+ArachnophobiaShieldSettings.enabled = true
+ArachnophobiaShield.hidden, ArachnophobiaShield.autoSuspended = nil, false
+ArachnophobiaShield.Cover.ClearAll()
+ArachnophobiaShield.ClearTrack()
 W.Clear()
 clearUnits()
 setUnit("player", { name = "CorpseTester", player = true })
 setPlate(1, makePlate(100, 1))
 setUnit("nameplate1", { name = "Forest Spider", level = 2, famId = 3,
     guid = "public-spider-A", dead = false })
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(W.expires == nil, "corpse warning: living spiders do not display a warning")
 units.nameplate1.dead = true
 warningTime = 1000.1
 event, arg1 = "UNIT_HEALTH", "nameplate1"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
 event, arg1 = nil, nil
 flushDisplay()
 check(W.frame and W.frame:IsShown() and W.frame.text.value:find("LOOK AWAY")
@@ -951,7 +951,7 @@ local firstDeadline = W.expires
 local firstTimer = warningTimers[#warningTimers]
 check(firstTimer.delay == 1.75, "corpse warning: a real timer expires the popup between scans")
 W.OnDeath("public-spider-A")
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 check(W.expires == firstDeadline, "corpse warning: duplicate health/death/poll signals do not extend the notice")
 warningTime = firstDeadline - 0.01
 W.Tick()
@@ -963,13 +963,13 @@ check(not W.frame:IsShown() and W.expires == nil, "corpse warning: disappears af
 -- Plate removal alone is not proof of death; readable GUID events can follow it.
 W.Clear()
 units.nameplate1.guid, units.nameplate1.dead = "public-spider-B", false
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 event, arg1 = "NAME_PLATE_UNIT_REMOVED", "nameplate1"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
 event, arg1 = nil, nil
 check(W.expires == nil, "corpse warning: leaving nameplate range does not produce a death warning")
 units.nameplate1 = nil
-ArachnaphobiaShield.eventFrame.rawScripts.OnEvent(nil, "UNIT_DIED", "public-spider-B")
+ArachnophobiaShield.eventFrame.rawScripts.OnEvent(nil, "UNIT_DIED", "public-spider-B")
 flushDisplay()
 check(W.frame:IsShown(), "corpse warning: public death event can warn just after the plate/token disappears")
 W.Hide()
@@ -978,7 +978,7 @@ check(W.expires == nil, "corpse warning: unrelated or unseen deaths are ignored"
 W.Clear()
 setUnit("nameplate1", { name = "Forest Spider", level = 2, famId = 3,
     guid = "expired-spider", dead = false })
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 warningTime = warningTime + W.RECENT_SECONDS + 0.1
 W.OnDeath("expired-spider")
 check(W.expires == nil, "corpse warning: stale observations cannot trigger remote death notices")
@@ -997,7 +997,7 @@ W.Observe("nameplate1")
 local secretDeath = {}
 issecretvalue = function(value) return rawequal(value, secretDeath) end
 arg1 = "restricted-spider"
-ArachnaphobiaShield.eventFrame.rawScripts.OnEvent(nil, "UNIT_DIED", secretDeath)
+ArachnophobiaShield.eventFrame.rawScripts.OnEvent(nil, "UNIT_DIED", secretDeath)
 arg1 = nil
 check(W.expires == nil, "corpse warning: secret event payload never falls back to legacy arguments")
 local savedDead = UnitIsDead
@@ -1017,13 +1017,13 @@ C_Secrets, issecretvalue = nil, nil
 -- Missing GUID APIs still allow observed readable death-state transitions.
 W.Clear()
 units.nameplate1.guid, units.nameplate1.dead = "removing-spider", false
-ArachnaphobiaShield.Tick()
+ArachnophobiaShield.Tick()
 units.nameplate1.dead = true
 event, arg1 = "NAME_PLATE_UNIT_REMOVED", "nameplate1"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
 event, arg1 = nil, nil
 flushDisplay()
-check(W.frame:IsShown() and ArachnaphobiaShield.track.nameplate1 == nil,
+check(W.frame:IsShown() and ArachnophobiaShield.track.nameplate1 == nil,
     "corpse warning: plate removal checks readable death state before releasing the cover")
 W.Clear()
 local savedGUID = UnitGUID
@@ -1031,7 +1031,7 @@ UnitGUID = nil
 units.nameplate1.dead = false
 W.Observe("nameplate1")
 units.nameplate1.dead = true
-ArachnaphobiaShield.eventFrame.rawScripts.OnEvent(nil, "UNIT_FLAGS", "nameplate1")
+ArachnophobiaShield.eventFrame.rawScripts.OnEvent(nil, "UNIT_FLAGS", "nameplate1")
 flushDisplay()
 check(W.frame:IsShown(), "corpse warning: readable unit death works without GUID or death-event support")
 W.Hide()
@@ -1059,17 +1059,17 @@ W.Clear()
 units.nameplate1.guid = "spider-E"
 W.Observe("nameplate1")
 flushDisplay()
-capture(function() ArachnaphobiaShield.Slash("disable") end)
+capture(function() ArachnophobiaShield.Slash("disable") end)
 check(not W.frame:IsShown() and next(W.byGUID) == nil and next(W.byToken) == nil,
     "corpse warning: disable immediately hides the popup and clears observations")
 W.OnDeath("spider-E")
 W.Observe("nameplate1")
 flushDisplay()
 check(W.expires == nil, "corpse warning: disabled events and scans cannot show the notice")
-ArachnaphobiaShieldSettings.enabled = true
+ArachnophobiaShieldSettings.enabled = true
 W.Observe("nameplate1")
 event = "PLAYER_ENTERING_WORLD"
-ArachnaphobiaShield.eventFrame.scripts.OnEvent()
+ArachnophobiaShield.eventFrame.scripts.OnEvent()
 event = nil
 check(W.expires == nil and next(W.byGUID) == nil,
     "corpse warning: world transitions clear warnings and cached identities")
@@ -1104,7 +1104,7 @@ check(legacyReads == 0, "corpse warning: all paths remain free of mouseover and 
 GetTime, C_Timer.After = originalTime, originalAfter
 
 -- ---- appearance selection / persistence / configuration ----------------
-local P, C, O = ArachnaphobiaShield.Appearance, ArachnaphobiaShield.Cover, ArachnaphobiaShield.Config
+local P, C, O = ArachnophobiaShield.Appearance, ArachnophobiaShield.Cover, ArachnophobiaShield.Config
 check(P.Current().id == "charcoal", "appearance: missing preference defaults to the charcoal")
 local normalized = { coverStyle = "unknown", customCover = 42 }
 P.Normalize(normalized)
@@ -1114,9 +1114,9 @@ normalized = { coverStyle = "CUSTOM", customCover = "Interface/AddOns/MyCovers/f
 P.Normalize(normalized)
 check(normalized.coverStyle == "charcoal" and normalized.customCover == "",
     "appearance: legacy MyCovers paths are retired and fall back to the charcoal")
-normalized = { coverStyle = "custom", customCover = "Interface/AddOns/ArachnaphobiaShield/Custom/flower.tga" }
+normalized = { coverStyle = "custom", customCover = "Interface/AddOns/ArachnophobiaShield/Custom/flower.tga" }
 P.Normalize(normalized)
-check(normalized.coverStyle == "custom" and normalized.customCover == "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\flower.tga",
+check(normalized.coverStyle == "custom" and normalized.customCover == "Interface\\AddOns\\ArachnophobiaShield\\Custom\\flower.tga",
     "appearance: valid saved custom choices survive normalization")
 normalized = { coverStyle = "fox", opacity = 0.75 }
 P.Normalize(normalized)
@@ -1126,64 +1126,64 @@ normalized.customCover = "https://example.org/flower.tga"
 P.Normalize(normalized)
 check(normalized.coverStyle == "fox",
     "appearance: a valid preset is kept when the custom path is invalid")
-check(P.CustomPath(' "Interface/AddOns/ArachnaphobiaShield/Custom/my flower.tga" ')
-    == "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\my flower.tga",
+check(P.CustomPath(' "Interface/AddOns/ArachnophobiaShield/Custom/my flower.tga" ')
+    == "Interface\\AddOns\\ArachnophobiaShield\\Custom\\my flower.tga",
     "appearance: local paths accept slash separators, spaces and surrounding quotes")
 for _, path in ipairs({ "C:\\Pictures\\flower.tga", "https://example.org/flower.tga",
     "Interface\\AddOns\\..\\flower.tga", "Interface\\AddOns\\MyCovers\\flower.tga",
-    "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\flower.png",
-    "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\a\n.tga",
-    "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\\\flower.tga" }) do
+    "Interface\\AddOns\\ArachnophobiaShield\\Custom\\flower.png",
+    "Interface\\AddOns\\ArachnophobiaShield\\Custom\\a\n.tga",
+    "Interface\\AddOns\\ArachnophobiaShield\\Custom\\\\flower.tga" }) do
     check(P.CustomPath(path) == nil, "appearance: rejects unsupported path " .. path:gsub("\n", "(newline)"))
 end
 
 -- Changing appearance updates both allocated and spare frames in place.
-ArachnaphobiaShieldSettings.enabled = true
+ArachnophobiaShieldSettings.enabled = true
 C.ClearAll()
 local appearanceSlot = C.Allocate()
 C.PlaceTracked(appearanceSlot, makePlate(100, 1), 40)
 flushDisplay()
 local beforeFrame, beforeParent = C.pool[appearanceSlot].frame, C.pool[appearanceSlot].frame.parent
 for _, preset in ipairs(P.PRESETS) do
-    capture(function() ArachnaphobiaShield.Slash("cover " .. preset.id) end)
+    capture(function() ArachnophobiaShield.Slash("cover " .. preset.id) end)
     local painted = true
     for _, slot in ipairs(C.pool) do
         if slot.art.texture[1] ~= preset.path or slot.art.tint[1] ~= 1 or slot.art.tint[4] ~= 1
             or slot.base.texture[1] ~= C.BACKDROP_PATH or slot.base.tint[4] ~= 0
             or not slot.base.allPoints then painted = false end
     end
-    check(painted and ArachnaphobiaShieldSettings.coverStyle == preset.id,
+    check(painted and ArachnophobiaShieldSettings.coverStyle == preset.id,
         "appearance: immediately paints every cover with " .. preset.id .. " and baked-in backing")
 end
 check(C.pool[appearanceSlot].frame == beforeFrame and beforeFrame.parent == beforeParent
     and C.IsAllocated(appearanceSlot), "appearance: selection preserves existing frames and allocation")
-ArachnaphobiaShieldSettings.color, ArachnaphobiaShieldSettings.opacity = { 1, 0, 0 }, 0.1
+ArachnophobiaShieldSettings.color, ArachnophobiaShieldSettings.opacity = { 1, 0, 0 }, 0.1
 C.ApplyStyle()
 check(C.pool[appearanceSlot].art.tint[2] == 1 and C.pool[appearanceSlot].art.tint[4] == 1,
     "appearance: legacy tint and retired opacity settings cannot make a cover translucent")
-capture(function() ArachnaphobiaShield.Slash("cover custom Interface/AddOns/ArachnaphobiaShield/Custom/my flower.tga") end)
-local customPath = "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\my flower.tga"
-check(ArachnaphobiaShieldSettings.coverStyle == "custom" and ArachnaphobiaShieldSettings.customCover == customPath
+capture(function() ArachnophobiaShield.Slash("cover custom Interface/AddOns/ArachnophobiaShield/Custom/my flower.tga") end)
+local customPath = "Interface\\AddOns\\ArachnophobiaShield\\Custom\\my flower.tga"
+check(ArachnophobiaShieldSettings.coverStyle == "custom" and ArachnophobiaShieldSettings.customCover == customPath
     and C.pool[appearanceSlot].art.texture[1] == customPath,
     "appearance: custom command preserves spaces and applies a local texture")
-capture(function() ArachnaphobiaShield.Slash("cover missing") end)
-capture(function() ArachnaphobiaShield.Slash("cover custom C:\\Pictures\\image.png") end)
-check(ArachnaphobiaShieldSettings.coverStyle == "custom" and ArachnaphobiaShieldSettings.customCover == customPath,
+capture(function() ArachnophobiaShield.Slash("cover missing") end)
+capture(function() ArachnophobiaShield.Slash("cover custom C:\\Pictures\\image.png") end)
+check(ArachnophobiaShieldSettings.coverStyle == "custom" and ArachnophobiaShieldSettings.customCover == customPath,
     "appearance: rejected choices leave the previous selection untouched")
-capture(function() ArachnaphobiaShield.Slash("cover fox") end)
-capture(function() ArachnaphobiaShield.Slash("cover custom") end)
+capture(function() ArachnophobiaShield.Slash("cover fox") end)
+capture(function() ArachnophobiaShield.Slash("cover custom") end)
 check(P.Current().path == customPath, "appearance: custom command can reuse the saved local path")
 
 -- Re-enter through the real settings/restore path, including late saves.
-ArachnaphobiaShield.ready = false
-ArachnaphobiaShield.OnEnterWorld()
+ArachnophobiaShield.ready = false
+ArachnophobiaShield.OnEnterWorld()
 check(P.Current().id == "custom" and C.pool[1].art.texture[1] == customPath,
     "appearance: saved custom choice survives settings migration and character restore")
 C.ClearAll()
 local trackedStyleSlot = C.Allocate()
 local trackedStylePlate = makePlate(100, 1)
 C.PlaceTracked(trackedStyleSlot, trackedStylePlate, 40)
-capture(function() ArachnaphobiaShield.Slash("cover blue") end)
+capture(function() ArachnophobiaShield.Slash("cover blue") end)
 check(C.pool[trackedStyleSlot].frame.parent == trackedStylePlate
     and C.pool[trackedStyleSlot].anchored and C.IsAllocated(trackedStyleSlot)
     and C.pool[trackedStyleSlot].frame.mouse == false,
@@ -1194,7 +1194,7 @@ local styleCallOK = pcall(C.ApplyStyle)
 check(styleCallOK and C.textureFailed,
     "appearance: a rejected paint on an attached cover is reported without bypassing restrictions")
 C.pool[trackedStyleSlot].base.SetTexture = originalBaseTexture
-capture(function() ArachnaphobiaShield.Slash("cover custom") end)
+capture(function() ArachnophobiaShield.Slash("cover custom") end)
 
 __unloadableTexture = customPath
 C.ApplyStyle()
@@ -1209,13 +1209,13 @@ C.ApplyStyle()
 check(C.pool[1].art.texture[1] == customPath,
     "appearance: repainting an initialized pool retains the saved choice")
 
-capture(function() ArachnaphobiaShield.Slash("disable") end)
-capture(function() ArachnaphobiaShield.Slash("cover blue") end)
+capture(function() ArachnophobiaShield.Slash("disable") end)
+capture(function() ArachnophobiaShield.Slash("cover blue") end)
 flushDisplay()
-check(not ArachnaphobiaShieldSettings.enabled and C.ShownCount() == 0,
+check(not ArachnophobiaShieldSettings.enabled and C.ShownCount() == 0,
     "appearance: choosing art while disabled cannot enable or reveal covers")
 check(O.frame == nil, "config: no interactive window is created automatically")
-capture(function() ArachnaphobiaShield.Slash("config") end)
+capture(function() ArachnophobiaShield.Slash("config") end)
 flushDisplay()
 check(O.frame and O.frame:IsShown() and O.frame.mouse == true,
     "config: the explicit command opens the cover picker")
@@ -1231,21 +1231,21 @@ check(O.input.autoFocus == false and O.preview.texture[1] == P.Find("blue").path
     "config: preview matches the saved choice without grabbing keyboard focus")
 check(O.input:GetText() == customPath,
     "config: the saved custom path prefills the field on open")
-check(O.background.texture[1] == "Interface\\AddOns\\ArachnaphobiaShield\\picker-bg.tga"
-    and O.buttons.fox.background.texture[1] == "Interface\\AddOns\\ArachnaphobiaShield\\picker-btn.tga"
-    and O.input.background.texture[1] == "Interface\\AddOns\\ArachnaphobiaShield\\picker-field.tga",
+check(O.background.texture[1] == "Interface\\AddOns\\ArachnophobiaShield\\picker-bg.tga"
+    and O.buttons.fox.background.texture[1] == "Interface\\AddOns\\ArachnophobiaShield\\picker-btn.tga"
+    and O.input.background.texture[1] == "Interface\\AddOns\\ArachnophobiaShield\\picker-field.tga",
     "picker: window, buttons and field use proven string-path background textures")
 check(O.preview.frame == O.previewBase.frame
     and O.preview.frame ~= O.previewChecker.frame
     and O.preview.frame:IsShown() and O.previewChecker.frame:IsShown(),
     "picker: backing and art share the pool-style cover frame; both preview frames shown after open")
 O.buttons.red.scripts.OnClick()
-check(ArachnaphobiaShieldSettings.coverStyle == "red" and O.preview.texture[1] == P.Find("red").path,
+check(ArachnophobiaShieldSettings.coverStyle == "red" and O.preview.texture[1] == P.Find("red").path,
     "config: native no-argument button scripts save and preview the selected preset")
-check(O.buttons.red.background.texture[1] == "Interface\\AddOns\\ArachnaphobiaShield\\picker-btn-sel.tga"
-    and O.buttons.fox.background.texture[1] == "Interface\\AddOns\\ArachnaphobiaShield\\picker-btn.tga",
+check(O.buttons.red.background.texture[1] == "Interface\\AddOns\\ArachnophobiaShield\\picker-btn-sel.tga"
+    and O.buttons.fox.background.texture[1] == "Interface\\AddOns\\ArachnophobiaShield\\picker-btn.tga",
     "picker: the selected preset's button shows the selected background")
-O.input:SetText("Interface/AddOns/ArachnaphobiaShield/Custom/flower.tga")
+O.input:SetText("Interface/AddOns/ArachnophobiaShield/Custom/flower.tga")
 O.input.scripts.OnEnterPressed()
 check(P.Current().id == "custom" and O.input.focusCleared and O.preview.texture[1] == P.Current().path,
     "config: custom input applies on Enter and releases focus")
@@ -1267,12 +1267,12 @@ CreateFrame = function()
     frame.CreateFontString = function() error("UI API unavailable", 0) end
     return frame
 end
-local pickerFallback = capture(function() ArachnaphobiaShield.Slash("config") end)
+local pickerFallback = capture(function() ArachnophobiaShield.Slash("config") end)
 CreateFrame = ordinaryCreateFrame
 check(O.unavailable and #pickerFallback == 3 and pickerFallback[1]:find("/as cover"),
     "config: an unavailable UI leaves working command-based cover selection")
 O.frame, O.unavailable = pickerFrame, nil
-capture(function() ArachnaphobiaShield.Slash("cover sage") end)
+capture(function() ArachnophobiaShield.Slash("cover sage") end)
 check(P.Current().id == "sage" and C.ShownCount() == 0,
     "config: command selection still works after a window API failure")
 check(legacyReads == 0, "appearance: configuration never queries mouseover or the cursor")
@@ -1287,7 +1287,7 @@ for _, preset in ipairs(P.PRESETS) do
     end
     check(exact, "opacity: " .. preset.id .. " is fully opaque without doubling alpha")
 end
-P.Select("custom", "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\flower.tga")
+P.Select("custom", "Interface\\AddOns\\ArachnophobiaShield\\Custom\\flower.tga")
 local backed = true
 for _, slot in ipairs(C.pool) do
     if slot.base.tint[4] ~= 1 or slot.art.tint[4] ~= 1 then backed = false end
@@ -1303,60 +1303,60 @@ check(C.pool[1].art.tint[4] == 1 and C.pool[1].base.tint[4] == 0,
 __rejectVertexAlpha = nil
 O.Open()
 check(O.preview.tint[4] == 1, "config: the preview cover is fully opaque")
-check(not ArachnaphobiaShieldSettings.enabled and C.ShownCount() == 0,
+check(not ArachnophobiaShieldSettings.enabled and C.ShownCount() == 0,
     "opacity: choosing an image never enables or reveals disabled covers")
-ArachnaphobiaShieldSettings.opacity = 0.75
-ArachnaphobiaShield.ready = false
-ArachnaphobiaShield.OnEnterWorld()
-check(ArachnaphobiaShieldSettings.opacity == nil and C.pool[1].art.tint[4] == 1,
+ArachnophobiaShieldSettings.opacity = 0.75
+ArachnophobiaShield.ready = false
+ArachnophobiaShield.OnEnterWorld()
+check(ArachnophobiaShieldSettings.opacity == nil and C.pool[1].art.tint[4] == 1,
     "opacity: a late-loaded legacy opacity value is retired and covers stay opaque")
-capture(function() ArachnaphobiaShield.Slash("enable") end)
-local liveSlot = ArachnaphobiaShield.track.nameplate1
+capture(function() ArachnophobiaShield.Slash("enable") end)
+local liveSlot = ArachnophobiaShield.track.nameplate1
 local liveFrame = C.pool[liveSlot].frame
 local liveParent = liveFrame.parent
-capture(function() ArachnaphobiaShield.Slash("cover red") end)
+capture(function() ArachnophobiaShield.Slash("cover red") end)
 check(C.pool[liveSlot].frame == liveFrame and liveFrame.parent == liveParent
     and liveFrame.mouse == false and C.pool[liveSlot].art.tint[4] == 1,
     "opacity: a live style change stays click-through and fully opaque")
-capture(function() ArachnaphobiaShield.Slash("disable") end)
+capture(function() ArachnophobiaShield.Slash("disable") end)
 O.Close()
 
 -- ---- /as reset: factory defaults --------------------------------------
 -- State entering this section: tracking disabled, pool released.
-capture(function() ArachnaphobiaShield.Slash("cover blue") end)
-capture(function() ArachnaphobiaShield.Slash("scale 120") end)
-capture(function() ArachnaphobiaShield.Slash("drop 1.25") end)
-capture(function() ArachnaphobiaShield.Slash("near 1") end)
-capture(function() ArachnaphobiaShield.Slash("name Reset Test Spider") end)
-capture(function() ArachnaphobiaShield.Slash("debug on") end)
-ArachnaphobiaShield.autoSuspended = true
+capture(function() ArachnophobiaShield.Slash("cover blue") end)
+capture(function() ArachnophobiaShield.Slash("scale 120") end)
+capture(function() ArachnophobiaShield.Slash("drop 1.25") end)
+capture(function() ArachnophobiaShield.Slash("near 1") end)
+capture(function() ArachnophobiaShield.Slash("name Reset Test Spider") end)
+capture(function() ArachnophobiaShield.Slash("debug on") end)
+ArachnophobiaShield.autoSuspended = true
 O.Open()
-O.input:SetText("Interface/AddOns/ArachnaphobiaShield/Custom/unsubmitted.tga")
-capture(function() ArachnaphobiaShield.Slash("reset") end)
-check(ArachnaphobiaShieldSettings.version == 5 and ArachnaphobiaShieldSettings.enabled == true
-    and ArachnaphobiaShieldSettings.coverStyle == "charcoal" and ArachnaphobiaShieldSettings.customCover == ""
-    and ArachnaphobiaShieldSettings.opacity == nil and ArachnaphobiaShieldSettings.coverSize == 96
-    and ArachnaphobiaShieldSettings.trackScale == 1.0 and ArachnaphobiaShieldSettings.drop == 0.3
-    and ArachnaphobiaShieldSettings.trackRelease == 0.5
-    and ArachnaphobiaShieldSettings.nearBoost == 3.0 and ArachnaphobiaShieldSettings.requireHostile == false
-    and ArachnaphobiaShieldSettings.minLevel == 1 and ArachnaphobiaShieldSettings.maxLevel == 99
-    and #ArachnaphobiaShieldSettings.extraNames == 0 and #ArachnaphobiaShieldSettings.namePatterns == 0
-    and ArachnaphobiaShieldSettings.debug == false, "reset: every saved setting returns to the factory default")
-check(ArachnaphobiaShieldSettings.autoTrack == nil and ArachnaphobiaShieldSettings.stickyCovers == nil
-    and ArachnaphobiaShieldSettings.parkCount == nil and ArachnaphobiaShieldSettings.arrange == nil
-    and ArachnaphobiaShieldSettings.covers == nil and ArachnaphobiaShieldSettings.color == nil
-    and ArachnaphobiaShieldSettings.opacity == nil
-    and ArachnaphobiaShieldSettings.nearThreshold == nil,
+O.input:SetText("Interface/AddOns/ArachnophobiaShield/Custom/unsubmitted.tga")
+capture(function() ArachnophobiaShield.Slash("reset") end)
+check(ArachnophobiaShieldSettings.version == 5 and ArachnophobiaShieldSettings.enabled == true
+    and ArachnophobiaShieldSettings.coverStyle == "charcoal" and ArachnophobiaShieldSettings.customCover == ""
+    and ArachnophobiaShieldSettings.opacity == nil and ArachnophobiaShieldSettings.coverSize == 96
+    and ArachnophobiaShieldSettings.trackScale == 1.0 and ArachnophobiaShieldSettings.drop == 0.3
+    and ArachnophobiaShieldSettings.trackRelease == 0.5
+    and ArachnophobiaShieldSettings.nearBoost == 3.0 and ArachnophobiaShieldSettings.requireHostile == false
+    and ArachnophobiaShieldSettings.minLevel == 1 and ArachnophobiaShieldSettings.maxLevel == 99
+    and #ArachnophobiaShieldSettings.extraNames == 0 and #ArachnophobiaShieldSettings.namePatterns == 0
+    and ArachnophobiaShieldSettings.debug == false, "reset: every saved setting returns to the factory default")
+check(ArachnophobiaShieldSettings.autoTrack == nil and ArachnophobiaShieldSettings.stickyCovers == nil
+    and ArachnophobiaShieldSettings.parkCount == nil and ArachnophobiaShieldSettings.arrange == nil
+    and ArachnophobiaShieldSettings.covers == nil and ArachnophobiaShieldSettings.color == nil
+    and ArachnophobiaShieldSettings.opacity == nil
+    and ArachnophobiaShieldSettings.nearThreshold == nil,
     "reset: retired settings are not reintroduced")
-check(ArachnaphobiaShield.debug == false and ArachnaphobiaShield.autoSuspended == false
-    and ArachnaphobiaShield.trackFailures == 0 and ArachnaphobiaShield.tickErrors == 0,
+check(ArachnophobiaShield.debug == false and ArachnophobiaShield.autoSuspended == false
+    and ArachnophobiaShield.trackFailures == 0 and ArachnophobiaShield.tickErrors == 0,
     "reset: runtime pause and debug state follow the restored defaults")
 check(O.input:GetText() == P.CUSTOM_ROOT and O.input.cursor == -1
     and O.preview.texture[1] == P.Find("charcoal").path and O.preview.tint[4] == 1,
     "reset: an open picker refreshes, prefills the prefix, and parks the caret at the end")
 O.Close()
 flushDisplay()
-local resetSlot = ArachnaphobiaShield.track.nameplate1
+local resetSlot = ArachnophobiaShield.track.nameplate1
 check(resetSlot ~= nil and C.IsAllocated(resetSlot) and C.ShownCount() > 0
     and C.pool[resetSlot].frame.parent == _G["NamePlate1"]
     and C.pool[resetSlot].art.texture[1] == P.Find("charcoal").path
@@ -1367,7 +1367,7 @@ check(resetSlot ~= nil and C.IsAllocated(resetSlot) and C.ShownCount() > 0
 -- Every cover, including recycled and quarantined frames, must have NEVER
 -- received EnableMouse(true), not merely be click-through at the end.
 local neverInteractive = true
-for _, slot in ipairs(ArachnaphobiaShield.Cover.pool) do
+for _, slot in ipairs(ArachnophobiaShield.Cover.pool) do
     for _, on in ipairs(slot.frame.mouseHistory or {}) do if on then neverInteractive = false end end
 end
 check(neverInteractive and movementCalls == 0, "input: no cover ever accepts clicks or invokes client movement APIs")
@@ -1378,7 +1378,7 @@ for _, kind in ipairs(_G.__frameKinds) do
 end
 check(not sliderCreated, "input: no Slider frame is ever created anywhere in the addon")
 local prohibitedAPI = false
-for _, path in ipairs({ "ArachnaphobiaShield/Cover.lua", "ArachnaphobiaShield/Config.lua" }) do
+for _, path in ipairs({ "ArachnophobiaShield/Cover.lua", "ArachnophobiaShield/Config.lua" }) do
     local sourceFile = assert(io.open(path, "rb"))
     local source = sourceFile:read("*a")
     sourceFile:close()

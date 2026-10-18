@@ -23,7 +23,7 @@ regenerating from the import always yields the same bytes. It refuses to
 treat an already-processed file as input (the card would be double-
 baked); to regenerate, restore the import first:
 
-    git show HEAD:ArachnaphobiaShield/cover.tga > ArachnaphobiaShield/cover.tga
+    git show HEAD:ArachnophobiaShield/cover.tga > ArachnophobiaShield/cover.tga
 
 Run locally (no network):
     uv run --with pillow python tools/make_cover_alpha.py [cover.tga]
@@ -63,7 +63,7 @@ def _over(fox, fox_a, back, back_a):
 
 
 def main():
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "ArachnaphobiaShield" / "cover.tga"
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "ArachnophobiaShield" / "cover.tga"
     im = Image.open(path).convert("RGBA")
     w, h = im.size
     px = im.load()

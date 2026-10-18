@@ -1,8 +1,8 @@
 -- A small, lazy-created cover picker using addon-owned frames only.
-ArachnaphobiaShield = ArachnaphobiaShield or {}
+ArachnophobiaShield = ArachnophobiaShield or {}
 local O = {}
-ArachnaphobiaShield.Config = O
-local P, C = ArachnaphobiaShield.Appearance, ArachnaphobiaShield.Cover
+ArachnophobiaShield.Config = O
+local P, C = ArachnophobiaShield.Appearance, ArachnophobiaShield.Cover
 
 local function region(parent, width, height, anchor, relative, x, y, kind)
 	local f = CreateFrame(kind or "Frame")
@@ -20,11 +20,11 @@ end
 -- opened here as a silent no-op, which is why the picker showed no
 -- background). Solid colors therefore ship as tiny TGA files.
 local ASSET = {
-	bg = "Interface\\AddOns\\ArachnaphobiaShield\\picker-bg.tga",
-	btn = "Interface\\AddOns\\ArachnaphobiaShield\\picker-btn.tga",
-	btnSelected = "Interface\\AddOns\\ArachnaphobiaShield\\picker-btn-sel.tga",
-	field = "Interface\\AddOns\\ArachnaphobiaShield\\picker-field.tga",
-	checker = "Interface\\AddOns\\ArachnaphobiaShield\\preview-checker.tga",
+	bg = "Interface\\AddOns\\ArachnophobiaShield\\picker-bg.tga",
+	btn = "Interface\\AddOns\\ArachnophobiaShield\\picker-btn.tga",
+	btnSelected = "Interface\\AddOns\\ArachnophobiaShield\\picker-btn-sel.tga",
+	field = "Interface\\AddOns\\ArachnophobiaShield\\picker-field.tga",
+	checker = "Interface\\AddOns\\ArachnophobiaShield\\preview-checker.tga",
 }
 
 local function textureOn(frame)
@@ -79,7 +79,7 @@ function O.Refresh()
 		end
 	end
 	O.RefreshPreview()
-	local saved = (ArachnaphobiaShieldSettings or {}).customCover or ""
+	local saved = (ArachnophobiaShieldSettings or {}).customCover or ""
 	-- Prefill the required prefix when no custom path is saved yet: the
 	-- validator only accepts the full game-relative path, and a bare file
 	-- name is the failure mode the picker keeps seeing.
@@ -117,7 +117,7 @@ local function create()
 	-- v0.4.7: the title region is centered in the 640-wide window and its
 	-- text is center-justified, so the caption sits on the window's axis.
 	O.title = region(f, 480, 30, "TOPLEFT", "TOPLEFT", (640 - 480) / 2, -12)
-	O.title.label = text(O.title, "Arachnaphobia Shield - Covers", 19, "CENTER")
+	O.title.label = text(O.title, "Arachnophobia Shield - Covers", 19, "CENTER")
 	-- v0.4.7: uniform 15px outer margins on every edge of the window.
 	text(region(f, 600, 26, "TOPLEFT", "TOPLEFT", 15, -44), "Choose the cover image that feels comfortable for you.")
 	O.closeButton = button(f, "Close", 70, 28, "TOPRIGHT", "TOPRIGHT", -15, -14, O.Close)
@@ -153,7 +153,7 @@ local function create()
 	-- One line, fits the 470-wide field below: the exact prefix the validator
 	-- requires (a bare file name is the failure mode the picker keeps seeing).
 	text(region(f, 600, 24, "TOPLEFT", "TOPLEFT", 15, -384),
-		"Custom image: .tga path under Interface\\AddOns\\ArachnaphobiaShield\\Custom\\", 12)
+		"Custom image: .tga path under Interface\\AddOns\\ArachnophobiaShield\\Custom\\", 12)
 	O.input = region(f, 470, 28, "TOPLEFT", "TOPLEFT", 15, -411, "EditBox")
 	O.input.background = solid(O.input, ASSET.field)
 	O.input:SetFont("Fonts\\FRIZQT__.TTF", 12, "")

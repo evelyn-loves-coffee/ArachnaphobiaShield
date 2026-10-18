@@ -18,8 +18,8 @@ from lupa.lua51 import LuaRuntime
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    addon = root / "ArachnaphobiaShield"
-    toc_path = addon / "ArachnaphobiaShield.toc"
+    addon = root / "ArachnophobiaShield"
+    toc_path = addon / "ArachnophobiaShield.toc"
     toc_text = toc_path.read_text(encoding="utf-8")
     match = re.search(r"^## Version: ([0-9]+(?:\.[0-9]+)*)$", toc_text, re.MULTILINE)
     if not match:
@@ -27,7 +27,7 @@ def main():
     version = match.group(1)
     # Build output belongs in the git-ignored dist/ directory, not in the
     # repository's parent folder (which is where this checkout lives).
-    output = root / "dist" / f"ArachnaphobiaShield-{version}-fixed.zip"
+    output = root / "dist" / f"ArachnophobiaShield-{version}-fixed.zip"
     dependencies = [line.strip() for line in toc_text.splitlines()
                     if line.strip() and not line.startswith("#")]
     sources = [toc_path, addon / "icon.tga", addon / "preview-checker.tga"]
@@ -63,20 +63,20 @@ def main():
 
     with ZipFile(output, "w", compression=ZIP_DEFLATED) as archive:
         for source in sorted(set(sources)):
-            archive.write(source, "ArachnaphobiaShield/" + source.relative_to(addon).as_posix())
-        archive.write(root / "README.md", "ArachnaphobiaShield/README.md")
-        archive.write(root / "LICENSE", "ArachnaphobiaShield/LICENSE")
-        archive.write(root / "LICENSE", "ArachnaphobiaShield/LICENSE.txt")
+            archive.write(source, "ArachnophobiaShield/" + source.relative_to(addon).as_posix())
+        archive.write(root / "README.md", "ArachnophobiaShield/README.md")
+        archive.write(root / "LICENSE", "ArachnophobiaShield/LICENSE")
+        archive.write(root / "LICENSE", "ArachnophobiaShield/LICENSE.txt")
         # Ship current references only; historical docs live in Git.
         for name in ("HANDOFF.md", "COVER-IMAGES.md"):
             source = root / "docs" / name
-            archive.write(source, "ArachnaphobiaShield/" + source.relative_to(root).as_posix())
+            archive.write(source, "ArachnophobiaShield/" + source.relative_to(root).as_posix())
         for name in ("config_preview.png", "cover_choices.png"):
             source = root / "docs" / "art" / name
-            archive.write(source, "ArachnaphobiaShield/docs/art/" + name)
+            archive.write(source, "ArachnophobiaShield/docs/art/" + name)
         # Fresh installs get the (empty) custom folder; its contents are
         # git-ignored and never packaged (explicit file list above).
-        archive.writestr("ArachnaphobiaShield/Custom/", b"")
+        archive.writestr("ArachnophobiaShield/Custom/", b"")
 
     review = root / "dist" / f"install-check-{version}"
     assert review.resolve().is_relative_to(root.resolve())
@@ -87,17 +87,17 @@ def main():
     with ZipFile(output) as archive:
         assert archive.testzip() is None
         for name in archive.namelist():
-            assert name.startswith("ArachnaphobiaShield/") and ".." not in Path(name).parts
+            assert name.startswith("ArachnophobiaShield/") and ".." not in Path(name).parts
         archive.extractall(review)
     for source in sources:
-        packaged = review / "ArachnaphobiaShield" / source.name
+        packaged = review / "ArachnophobiaShield" / source.name
         assert packaged.read_bytes() == source.read_bytes(), source.name
     # The custom folder ships empty; personal art never enters a release.
-    assert (review / "ArachnaphobiaShield" / "Custom").is_dir()
-    assert next((review / "ArachnaphobiaShield" / "Custom").iterdir(), None) is None
-    readme = (review / "ArachnaphobiaShield" / "README.md").read_text(encoding="utf-8")
+    assert (review / "ArachnophobiaShield" / "Custom").is_dir()
+    assert next((review / "ArachnophobiaShield" / "Custom").iterdir(), None) is None
+    readme = (review / "ArachnophobiaShield" / "README.md").read_text(encoding="utf-8")
     assert "GrasHopper42" in readme and "nospider-arachnophobia-mode" in readme
-    assert (review / "ArachnaphobiaShield" / "LICENSE.txt").read_bytes() == (root / "LICENSE").read_bytes()
+    assert (review / "ArachnophobiaShield" / "LICENSE.txt").read_bytes() == (root / "LICENSE").read_bytes()
 
     # Exercise the actual packaged Lua files using the existing client stubs.
     messages = []
