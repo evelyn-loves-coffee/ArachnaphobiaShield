@@ -8,6 +8,11 @@ local ROOT = "Interface\\AddOns\\ArachnaphobiaShield\\"
 -- git-ignored and never packaged (tools/package_addon.py ships an explicit
 -- file list), so personal images stay out of releases.
 P.CUSTOM_ROOT = "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\"
+-- v0.4.9: the default cover is the plain charcoal (was fox). This is the
+-- single source of truth for the default; Core.lua's DEFAULTS references it.
+-- The preset ORDER (fox, red, blue, sage, charcoal) is unchanged in the
+-- picker, the help line and /as cover - only the default value moved.
+P.DEFAULT_ID = "charcoal"
 P.PRESETS = {
 	{ id = "fox", label = "Fox", path = ROOT .. "cover.tga" },
 	{ id = "red", label = "Muted red squircle", path = ROOT .. "cover-red.tga" },
@@ -43,8 +48,8 @@ function P.Normalize(settings)
 	settings.opacity = nil
 	local path = P.CustomPath(settings.customCover)
 	settings.customCover = path or ""
-	local id = type(settings.coverStyle) == "string" and settings.coverStyle:lower() or "fox"
-	if not P.Find(id) and not (id == "custom" and path) then id = "fox" end
+	local id = type(settings.coverStyle) == "string" and settings.coverStyle:lower() or P.DEFAULT_ID
+	if not P.Find(id) and not (id == "custom" and path) then id = P.DEFAULT_ID end
 	settings.coverStyle = id
 end
 
@@ -54,7 +59,7 @@ function P.Current()
 		local path = P.CustomPath(s.customCover)
 		if path then return { id = "custom", label = "Custom image", path = path } end
 	end
-	return P.Find(s.coverStyle) or P.PRESETS[1]
+	return P.Find(s.coverStyle) or P.Find(P.DEFAULT_ID)
 end
 
 function P.Select(id, customPath)

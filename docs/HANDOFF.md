@@ -1,9 +1,10 @@
 # Handoff (maintainer)
 
-**Current: v0.4.8** — `/as scale` rename (was `/as grow`). Automatic
-nameplate-attached covers, image picker, custom TGA support, look-away
-corpse warning. 228-check offline Lua 5.1 suite green; packaged build
-re-validates the same suite against the extracted zip.
+**Current: v0.4.9** — bare `/as` now mirrors `/as help`; `/as version`
+and `/as selftest` split the old diagnostics; default cover is charcoal;
+default `drop` is 0.3. Automatic nameplate-attached covers, image picker,
+custom TGA support, look-away corpse warning. Offline Lua 5.1 suite green;
+packaged build re-validates the same suite against the extracted zip.
 
 Development and live testing happen on the owner's own machine: this
 checkout's `dist/` package is live-swapped into
@@ -63,15 +64,16 @@ removed with the doc consolidation; this summary is the live reference):
 `Core.lua` `plateSize()`: `size = plateWidth × (trackScale × nearBoost)`,
 clamped to `MIN_TRACK`–`MAX_TRACK` in local px. `trackScale` is the
 `/as scale` multiplier (0.8–1.2, default 1.0). `drop` offsets the cover
-`drop` cover-heights below the plate (default 0.5, calibrated in game
-2026-10-16). The near-field boost is a smoothstep of apparent width:
+`drop` cover-heights below the plate (default 0.3 since v0.4.9; the
+2026-10-16 in-game calibration established the range, 0.5 fully inside).
+The near-field boost is a smoothstep of apparent width:
 knees 75/85 UI px, ceiling `nearBoost = 3.0` (raised from 2.6 in v0.4.4;
 plate width saturates at ~91 UI so the flat ceiling is the only lever for
 extreme-close legs). Knees must stay inside the 73–90 band — earlier
 knees (30, then 60) sat below the clamp and boosted far plates. Do not
 change the sizing model without live measurements.
 
-Defaults: `trackScale=1.0`, `drop=0.5`, `nearBoost=3.0`,
+Defaults: `trackScale=1.0`, `drop=0.3`, `nearBoost=3.0`,
 `coverSize=96` fallback, `trackRelease=0.5` s.
 
 ## Corpse handling
@@ -120,7 +122,7 @@ excluded (license). NoSpider data is not copied. Full review rules were in
    input returns to the game; choice persists after reload.
 5. Observed spider death: centered click-through warning, gone in ~1.75 s.
 6. `/as scale 120` / `/as drop 1.25` / an extra name, then `/as reset`:
-   defaults return (fox, scale 100) and persist after reload.
+   defaults return (charcoal, scale 100) and persist after reload.
 
 ## Files and offline verification
 

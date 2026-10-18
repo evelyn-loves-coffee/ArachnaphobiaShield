@@ -6,7 +6,9 @@ Covers never accept mouse input or store screen positions.
   * /as enable: enable tracking (the default) and retry paused coverage.
   * /as disable: hide every cover and stop tracking.
   * /as reset: restore every saved setting to its factory default.
-  * Bare /as prints diagnostics.
+  * Bare /as and /as help: print usage (the same two lines).
+  * /as version: print the addon and client version line.
+  * /as selftest: print the live-state diagnostics (enabled/tracking/covers).
 
 Client facts (see docs/HANDOFF.md, verified in-client 2026-10-13):
   * WoW Forever 1.60.1 / build 70374 / interface 16001, Lua 5.1
@@ -17,7 +19,7 @@ Client facts (see docs/HANDOFF.md, verified in-client 2026-10-13):
 ]]
 
 ArachnaphobiaShield = ArachnaphobiaShield or {}
-ArachnaphobiaShield.version = "0.4.8"
+ArachnaphobiaShield.version = "0.4.9"
 local A = ArachnaphobiaShield.Access
 
 ArachnaphobiaShield.hidden = nil  -- panic-hide seam (M4); true hides every cover
@@ -44,7 +46,10 @@ local DEFAULTS = {
 	-- Schema 4 removes all screen layouts and input-taking cover settings.
 	version = 5,
 	enabled = true,
-	coverStyle = "fox",
+	-- v0.4.9: default cover is the plain charcoal (was fox). The preset
+	-- ORDER is unchanged (fox, red, blue, sage, charcoal) in the picker,
+	-- the help line and /as cover - only the default value moved.
+	coverStyle = ArachnaphobiaShield.Appearance.DEFAULT_ID,
 	customCover = "",
 	-- v0.3.8: opacity retired; covers are always fully opaque (the client
 	-- fades them at distance regardless). Legacy keys are dropped in
@@ -67,7 +72,8 @@ local DEFAULTS = {
 	-- Web Spider): at 0.9 the model sat above the cover's top edge; at 0.5
 	-- the whole model (hanging ~0.2-0.3 cover-heights below plate centre) is
 	-- inside the cover with only minimal nameplate overlap.
-	drop = 0.5,
+	-- v0.4.9: default lowered to 0.3 (owner preference, 2026-10-18).
+	drop = 0.3,
 	trackRelease = 0.5, -- seconds a cover survives losing its plate (anti-flicker)
 	-- Near-field boost (v0.4.1: automatic, no config value). The client
 	-- holds nameplate APPARENT size in a narrow band while the model keeps
@@ -154,16 +160,25 @@ function ArachnaphobiaShield.Reset()
 		ArachnaphobiaShield.Refresh()
 	end
 	if ArachnaphobiaShield.Config and ArachnaphobiaShield.Config.frame then ArachnaphobiaShield.Config.Refresh() end
-	print("AS| settings restored to defaults - tracking on, fox cover")
+	print("AS| settings restored to defaults - tracking on, charcoal cover")
 end
 
 -- ----------------------------------------------------------------- slash
 _G.SLASH_AS1 = "/as"
 
+-- Usage text for /as help (and bare /as). No '|' chars in chat text: the WoW
+-- chat filter eats chat-control sequences like |t / |h (AS11) - use ' / '
+-- separators.
+function ArachnaphobiaShield.Help()
+	print("AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>")
+	print("AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X")
+end
+
 function ArachnaphobiaShield.Slash(msg)
 	local first = string.match(msg or "", "^%s*(%S+)") or ""
 	if first == "" then
-		ArachnaphobiaShield.Selftest()
+		-- Standard convention: a bare command shows usage. Mirror /as help.
+		ArachnaphobiaShield.Help()
 	elseif first == "config" or first == "options" then
 		ArachnaphobiaShield.Config.Open()
 	elseif first == "cover" then
@@ -294,11 +309,12 @@ function ArachnaphobiaShield.Slash(msg)
 				and (("AS| forgot '%s' (%d extra names left)"):format(name, #kept))
 				or  (("AS| '%s' was not on your extra-name list (%d)"):format(name, #kept)))
 		end
+	elseif first == "version" then
+		print(ArachnaphobiaShield.VersionLine())
+	elseif first == "selftest" then
+		ArachnaphobiaShield.Selftest()
 	elseif first == "help" then
-		-- No '|' chars in chat text: the WoW chat filter eats chat-control
-		-- sequences like |t / |h (AS11) — use ' / ' separators.
-		print("AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>")
-		print("AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X")
+		ArachnaphobiaShield.Help()
 	else
 		print(("AS| unknown subcommand '%s' - /as help for usage"):format(first))
 	end
@@ -310,10 +326,11 @@ end
 
 -- ---------------------------------------------------------------- selftest
 local lastSelftest = 0
-function ArachnaphobiaShield.Selftest()
-	local now = GetTime()
-	if now - lastSelftest < 0.25 then return end
-	lastSelftest = now
+
+-- First diagnostic line: the addon version plus the client's build, interface
+-- and Lua versions. Returned (not printed) so /as version and any other
+-- caller can reuse it.
+function ArachnaphobiaShield.VersionLine()
 	-- AS2 (see docs/HANDOFF.md): GetBuildInfo returns FOUR values on this
 	-- client - "1.60.1", "70374", "Oct 12 2026", "16001" - i.e. build string,
 	-- build number, build date, interface version. Not major/minor/patch.
@@ -323,9 +340,19 @@ function ArachnaphobiaShield.Selftest()
 	local build, buildNo, buildDate, iface = GetBuildInfo()
 	local lua = (type(_VERSION) == "string" and _VERSION or "Lua 5.1")
 	lua = "Lua " .. ((lua:gsub("^%s*Lua%s+", "")))
-	print(("AS| v%s | WoW %s build %s (%s) | interface %s | %s"):format(
+	return ("AS| v%s | WoW %s build %s (%s) | interface %s | %s"):format(
 		ArachnaphobiaShield.version, tostring(build), tostring(buildNo), tostring(buildDate),
-		tostring(iface), lua))
+		tostring(iface), lua)
+end
+
+-- Live-state diagnostics: the two lines bare /as used to print AFTER the
+-- version line - enabled/char/driver/corpsePopup/cover, then the tracking
+-- mode line. Bound to /as selftest. Throttled so rapid re-queries do not
+-- flood chat.
+function ArachnaphobiaShield.Selftest()
+	local now = GetTime()
+	if now - lastSelftest < 0.25 then return end
+	lastSelftest = now
 	local s = ArachnaphobiaShieldSettings
 	local warning = ArachnaphobiaShield.DeathWarning
 	local popupState = warning.popupUnavailable and "unavailable" or (warning.expires and "active" or "idle")

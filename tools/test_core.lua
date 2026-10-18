@@ -256,8 +256,17 @@ check(ArachnaphobiaShieldSettings.autoTrack == nil and ArachnaphobiaShieldSettin
 check(_G.SLASH_AS1 == "/as" and type(SlashCmdList["AS"]) == "function",
     "slash: /as is registered")
 local out = capture(function() ArachnaphobiaShield.Slash("") end)
-check(#out == 3 and out[1]:find("WoW 1%.60%.1") and out[3]:find("mode=tracking"),
-    "status: reports client build and tracking mode")
+check(#out == 2
+    and out[1] == "AS| /as enable / disable / reset / config / cover <fox / red / blue / sage / charcoal>"
+    and out[2] == "AS| Advanced: scale N (80-120, 100 = default) / drop N / names / name X / forget X",
+    "status: bare /as prints usage, identical to /as help")
+out = capture(function() ArachnaphobiaShield.Slash("version") end)
+check(#out == 1 and out[1]:find("WoW 1%.60%.1") ~= nil and out[1]:find("interface 16001") ~= nil
+    and out[1]:find("Lua 5.1") ~= nil,
+    "version: reports the addon version, client build, interface and Lua")
+out = capture(function() ArachnaphobiaShield.Slash("selftest") end)
+check(#out == 2 and out[1]:find("enabled=") ~= nil and out[2]:find("mode=tracking") ~= nil,
+    "selftest: reports the live state and tracking mode")
 
 -- ---- /as scale / /as near: v0.4.1 percentage and automatic near -------
 out = capture(function() ArachnaphobiaShield.Slash("scale 100") end)
@@ -448,8 +457,9 @@ ArachnaphobiaShieldSettings = {}
 ArachnaphobiaShield.ready = false
 ArachnaphobiaShield.OnEnterWorld()
 ArachnaphobiaShield.ClearTrack()
-check(ArachnaphobiaShieldSettings.coverStyle == "fox" and ArachnaphobiaShieldSettings.enabled and ArachnaphobiaShieldSettings.covers == nil,
-    "defaults: fresh install selects the fox and enables only tracking")
+check(ArachnaphobiaShieldSettings.coverStyle == "charcoal" and ArachnaphobiaShieldSettings.enabled
+    and ArachnaphobiaShieldSettings.drop == 0.3 and ArachnaphobiaShieldSettings.covers == nil,
+    "defaults: fresh install selects the charcoal, drop 0.3, and enables only tracking")
 -- Neutralize the automatic near ramp for the calibrated-geometry tests
 -- below; the near block re-enables the boost and tests the ramp itself.
 ArachnaphobiaShieldSettings.nearBoost = 1.0
@@ -493,9 +503,10 @@ check(trackedFrame:GetParent() == plateA,
 -- 100 plate-local units (100% of the plate) render as 50 UI units at scale 0.5.
 check(ArachnaphobiaShield.Cover.pool[trA].w == 100 and trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() == 50,
 	"track: plate-local cover size inherits distance scale exactly once")
--- drop = 0.5 cover-heights below the plate (calibrated in game 2026-10-16:
--- at 0.9 the model sat above the cover's top edge)
-check(ptA and math.abs((ptA.y or 0) * trackedFrame:GetEffectiveScale() + 25) < 0.001,
+-- drop = 0.3 cover-heights below the plate (v0.4.9 default; the 2026-10-16
+-- in-game calibration established the range - at 0.9 the model sat above
+-- the cover's top edge, at 0.5 fully inside)
+check(ptA and math.abs((ptA.y or 0) * trackedFrame:GetEffectiveScale() + 15) < 0.001,
 	"track: centred below the plate by the drop factor")
 
 -- The renderer owns plate coordinates; the addon may not query them. Move
@@ -511,17 +522,17 @@ local function renderedCenter(frame)
 end
 plateA.nativeX, plateA.nativeY = 500, 400
 local rx, ry = renderedCenter(trackedFrame)
-check(rx == 500 and ry == 375, "track: native transform places the cover below its spider plate")
+check(rx == 500 and ry == 385, "track: native transform places the cover below its spider plate")
 plateA.nativeX, plateA.nativeY = 750, 350
 rx, ry = renderedCenter(trackedFrame)
-check(rx == 750 and ry == 325,
+check(rx == 750 and ry == 335,
 	"track: native model movement moves its cover before the next polling tick")
 
 -- Perspective changes between the 10 Hz scans: native parenting must scale
 -- BOTH the disc and its offset immediately, without another Lua update.
 plateA.effScale = 1
 check(trackedFrame:GetWidth() * trackedFrame:GetEffectiveScale() == 100
-	and ptA.y * trackedFrame:GetEffectiveScale() == -50,
+	and ptA.y * trackedFrame:GetEffectiveScale() == -30,
 	"track: camera zoom scales the cover and drop between polling ticks")
 ArachnaphobiaShield.Tick()
 check(trackedFrame:GetWidth() == 100,
@@ -627,7 +638,7 @@ ArachnaphobiaShield.Tick()
 check(trackedFrame:GetWidth() == 100,
 	"near: apparent 50 is below the 75 knee - far/mid plates stay unboosted")
 local ptNear = ArachnaphobiaShield.Cover.pool[trA].frame.points[1]
-check(math.abs(ptNear.y * trackedFrame:GetEffectiveScale() + 100 * 0.5 * 0.5) < 0.001,
+check(math.abs(ptNear.y * trackedFrame:GetEffectiveScale() + 100 * 0.3 * 0.5) < 0.001,
 	"near: the unboosted cover keeps the drop ratio below the plate")
 plateA.effScale = 0.2 -- apparent 20: a far spider, ramp not started
 ArachnaphobiaShield.Tick()
@@ -1105,25 +1116,27 @@ GetTime, C_Timer.After = originalTime, originalAfter
 
 -- ---- appearance selection / persistence / configuration ----------------
 local P, C, O = ArachnaphobiaShield.Appearance, ArachnaphobiaShield.Cover, ArachnaphobiaShield.Config
-check(P.Current().id == "fox", "appearance: missing preference defaults to the fox")
+check(P.Current().id == "charcoal", "appearance: missing preference defaults to the charcoal")
 local normalized = { coverStyle = "unknown", customCover = 42 }
 P.Normalize(normalized)
-check(normalized.coverStyle == "fox" and normalized.customCover == "",
+check(normalized.coverStyle == "charcoal" and normalized.customCover == "",
     "appearance: corrupt saved choices fall back without a broken texture path")
 normalized = { coverStyle = "CUSTOM", customCover = "Interface/AddOns/MyCovers/flower.tga" }
 P.Normalize(normalized)
-check(normalized.coverStyle == "fox" and normalized.customCover == "",
-    "appearance: legacy MyCovers paths are retired and fall back to the fox")
+check(normalized.coverStyle == "charcoal" and normalized.customCover == "",
+    "appearance: legacy MyCovers paths are retired and fall back to the charcoal")
 normalized = { coverStyle = "custom", customCover = "Interface/AddOns/ArachnaphobiaShield/Custom/flower.tga" }
 P.Normalize(normalized)
 check(normalized.coverStyle == "custom" and normalized.customCover == "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\flower.tga",
     "appearance: valid saved custom choices survive normalization")
 normalized = { coverStyle = "fox", opacity = 0.75 }
 P.Normalize(normalized)
-check(normalized.opacity == nil, "appearance: the retired opacity key is dropped on load")
+check(normalized.opacity == nil and normalized.coverStyle == "fox",
+    "appearance: the retired opacity key is dropped and a valid preset is kept")
 normalized.customCover = "https://example.org/flower.tga"
 P.Normalize(normalized)
-check(normalized.coverStyle == "fox", "appearance: invalid saved custom path returns to the fox")
+check(normalized.coverStyle == "fox",
+    "appearance: a valid preset is kept when the custom path is invalid")
 check(P.CustomPath(' "Interface/AddOns/ArachnaphobiaShield/Custom/my flower.tga" ')
     == "Interface\\AddOns\\ArachnaphobiaShield\\Custom\\my flower.tga",
     "appearance: local paths accept slash separators, spaces and surrounding quotes")
@@ -1332,9 +1345,9 @@ O.Open()
 O.input:SetText("Interface/AddOns/ArachnaphobiaShield/Custom/unsubmitted.tga")
 capture(function() ArachnaphobiaShield.Slash("reset") end)
 check(ArachnaphobiaShieldSettings.version == 5 and ArachnaphobiaShieldSettings.enabled == true
-    and ArachnaphobiaShieldSettings.coverStyle == "fox" and ArachnaphobiaShieldSettings.customCover == ""
+    and ArachnaphobiaShieldSettings.coverStyle == "charcoal" and ArachnaphobiaShieldSettings.customCover == ""
     and ArachnaphobiaShieldSettings.opacity == nil and ArachnaphobiaShieldSettings.coverSize == 96
-    and ArachnaphobiaShieldSettings.trackScale == 1.0 and ArachnaphobiaShieldSettings.drop == 0.5
+    and ArachnaphobiaShieldSettings.trackScale == 1.0 and ArachnaphobiaShieldSettings.drop == 0.3
     and ArachnaphobiaShieldSettings.trackRelease == 0.5
     and ArachnaphobiaShieldSettings.nearBoost == 3.0 and ArachnaphobiaShieldSettings.requireHostile == false
     and ArachnaphobiaShieldSettings.minLevel == 1 and ArachnaphobiaShieldSettings.maxLevel == 99
@@ -1350,14 +1363,14 @@ check(ArachnaphobiaShield.debug == false and ArachnaphobiaShield.autoSuspended =
     and ArachnaphobiaShield.trackFailures == 0 and ArachnaphobiaShield.tickErrors == 0,
     "reset: runtime pause and debug state follow the restored defaults")
 check(O.input:GetText() == P.CUSTOM_ROOT and O.input.cursor == -1
-    and O.preview.texture[1] == P.PRESETS[1].path and O.preview.tint[4] == 1,
+    and O.preview.texture[1] == P.Find("charcoal").path and O.preview.tint[4] == 1,
     "reset: an open picker refreshes, prefills the prefix, and parks the caret at the end")
 O.Close()
 flushDisplay()
 local resetSlot = ArachnaphobiaShield.track.nameplate1
 check(resetSlot ~= nil and C.IsAllocated(resetSlot) and C.ShownCount() > 0
     and C.pool[resetSlot].frame.parent == _G["NamePlate1"]
-    and C.pool[resetSlot].art.texture[1] == P.PRESETS[1].path
+    and C.pool[resetSlot].art.texture[1] == P.Find("charcoal").path
     and C.pool[resetSlot].art.tint[4] == 1 and C.pool[resetSlot].base.tint[4] == 0
     and C.pool[resetSlot].frame.mouse == false,
     "reset: tracking resumes with the default cover at full opacity, click-through")
