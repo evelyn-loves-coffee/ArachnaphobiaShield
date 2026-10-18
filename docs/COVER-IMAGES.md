@@ -71,6 +71,14 @@ square without stretching/cropping, and writes an uncompressed 24-bit RGB
 TGA. If you use another converter, a 512 x 512 uncompressed RGB TGA is
 the format used and checked for the included fox.
 
+**Dimensions rule:** the TGA's width and height must each be a power of
+2 (256, 512, 1024, …; non-square is fine, e.g. 512 x 256), per the
+client's texture documentation (["TGA files",
+warcraft.wiki.gg](https://warcraft.wiki.gg/wiki/TGA_files)). A
+800 x 600 or 1000 x 1000 file cannot be decoded and the picker falls
+back to the fox. The import helper always satisfies the rule (it pads
+to 512 x 512), so any PNG/JPEG works as-is.
+
 Fully exit and reopen the game after adding a new texture, then check
 the picker's preview (new-file reload behavior is not verified on this
 client). A reported texture failure falls back to the fox.
@@ -79,7 +87,7 @@ client). A reported texture failure falls back to the fox.
 
 | Symptom | Cause / fix |
 | :-- | :-- |
-| Picker status: *“Image failed to load; showing the fox.”* | The client could not load the file. Check spelling, backslashes and that the file really is a TGA the client can decode. Test a known-good file first (e.g. `Interface\AddOns\ArachnaphobiaShield\cover.tga`). |
+| Picker status: *“Image failed to load; showing the fox.”* | The client could not load the file. Check spelling, backslashes and that the file really is a TGA the client can decode. Test a known-good file first (e.g. `Interface\AddOns\ArachnaphobiaShield\cover.tga`). | Dimensions are not powers of 2 (e.g. 800 x 600, 1000 x 1000) | Re-export at 512 x 512 — the import helper does this automatically. |
 | Picker rejects the path with an error | The path must be under `Interface\AddOns\ArachnaphobiaShield\Custom\`, end with `.tga`, contain no `..`, no double backslashes, no control characters, and be ≤ 240 characters. |
 | Preview looks right but the in-game cover shows the fox | The texture loaded in the picker but not at cover size/time. Retry after `/reload`; try a smaller 24-bit TGA. |
 | Transparent parts show navy, not the world | Intentional — the navy backing is the minimum coverage floor for custom art. |
